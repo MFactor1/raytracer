@@ -1,7 +1,7 @@
 use super::vec3::Vec3;
 use std::io::{BufWriter, Write};
 
-pub type Color = Vec3<f32>;
+pub type Color = Vec3<f64>;
 
 impl Color {
     pub fn write_color<W: Write>(&self, out: &mut BufWriter<W>) -> Result<(), std::io::Error> {
