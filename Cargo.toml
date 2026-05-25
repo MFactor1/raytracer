@@ -1,0 +1,17 @@
+[package]
+name = "pathtracer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+log = "0.4.29"
+colog = "1.4.0"
+num-traits = "0.2.19"
+
+[lib]
+name = "pathtracer_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pathtracer"
+path = "src/main.rs"
