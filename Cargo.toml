@@ -8,6 +8,7 @@ log = "0.4.29"
 colog = "1.4.0"
 num-traits = "0.2.19"
 indicatif = "0.18.4"
+rand = "0.10.1"
 
 [lib]
 name = "pathtracer_lib"

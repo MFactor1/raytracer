@@ -2,6 +2,8 @@ use core::ops;
 use num_traits::float::Float as FloatBase;
 use std::io::{BufWriter, Write};
 use std::string::ToString;
+use rand::Rng;
+use rand::distr::{Uniform, Distribution as _};
 
 pub trait Float:
     FloatBase + ops::AddAssign + ops::SubAssign + ops::MulAssign + ops::DivAssign + ToString
@@ -110,10 +112,48 @@ impl<T: Float> ops::Div<T> for Vec3<T> {
     }
 }
 
+impl<T: Float> ops::Neg for Vec3<T> {
+    type Output = Self;
+
+    #[inline]
+    fn neg(self) -> Self::Output {
+        Vec3::new(-self[0], -self[1], -self[2])
+    }
+}
+
 impl<T: Float> ToString for Vec3<T> {
     #[inline]
     fn to_string(&self) -> String {
         self[0].to_string() + " " + &self[1].to_string() + " " + &self[2].to_string() + "\n"
+    }
+}
+
+impl Vec3<f64> {
+    #[inline]
+    pub fn random<R: Rng>(rng: &mut R, dist: Uniform<f64>) -> Self {
+        Vec3([dist.sample(rng), dist.sample(rng), dist.sample(rng)])
+    }
+
+    #[inline]
+    pub fn random_unit_vector<R: Rng>(rng: &mut R) -> Self {
+        let dist = Uniform::new(-1.0, 1.0).unwrap();
+        loop {
+            let vec = Self::random(rng, dist);
+            let length_sq = vec.length_squared();
+            if 1e-160 < length_sq && length_sq <= 1.0 {
+                return vec / length_sq.sqrt();
+            }
+        }
+    }
+
+    pub fn random_on_normal<R: Rng>(rng: &mut R, norm: Vec3<f64>) -> Self {
+        let vec = Self::random_unit_vector(rng);
+
+        if vec.dot(norm) > 0.0 {
+            vec
+        } else {
+            -vec
+        }
     }
 }
 
@@ -178,6 +218,12 @@ impl<T: Float> Vec3<T> {
     #[inline]
     pub fn z(&self) -> T {
         self[2]
+    }
+
+    #[inline]
+    pub fn near_zero(&self) -> bool {
+        let e = T::from(1e-8).unwrap();
+        self[0].abs() < e && self[1].abs() < e && self[2].abs() < e
     }
 }
 

@@ -18,6 +18,10 @@ pub trait Normal {
     fn normal(&self, point: Point3<f64>) -> Ray;
 }
 
+pub trait Scatter {
+    fn scatter(&self, ray: &Ray, point: Point3<f64>) -> 
+}
+
 pub struct ObjectSet(Vec<Box<dyn Object>>);
 
 impl ObjectSet {

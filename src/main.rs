@@ -10,12 +10,14 @@ fn main() {
     world.push(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5));
     world.push(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0));
 
-    let camera = Camera::new(
-        3840,
+    let mut camera = Camera::new(
+        1920,
         16.0 / 9.0,
         2.0,
         1.0,
         Point3::new(0.0, 0.0, 0.0),
+        100,
+        50,
     );
 
     camera.render(&world, "output.ppm").unwrap();
