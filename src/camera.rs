@@ -87,7 +87,6 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &ObjectSet, file: &str) -> std::io::Result<()> {
-
         let file = File::create(file)?;
         let mut writer = BufWriter::new(file);
 
@@ -108,7 +107,7 @@ impl Camera {
                 let mut pix_color = Color::new(0.0, 0.0, 0.0);
                 for _ in 0..self.pix_samples {
                     let ray = self.get_ray(i, j);
-                    pix_color += self.ray_color(&ray, world, 0);
+                    pix_color += self.ray_color(ray, world, 0);
                 }
                 pix_color /= self.pix_samples as f64;
                 pix_color.write_color(&mut writer)?;
@@ -116,6 +115,15 @@ impl Camera {
         }
         writer.flush()?;
         Ok(())
+    }
+
+    /// Gets a non-randomized ray, useful for debugging
+    fn get_static_ray(&self, x: usize, y: usize) -> Ray {
+        let pixel_loc = self.pix_00
+            + self.pix_delta_u * x as f64
+            + self.pix_delta_v * y as f64;
+
+        Ray::new(self.camera_center, pixel_loc - self.camera_center)
     }
 
     /// Gets a Ray from the camera to a random location inside the given pixel.
@@ -133,19 +141,17 @@ impl Camera {
         return Vec3::new(dist.sample(&mut self.rng) - 0.5, dist.sample(&mut self.rng) - 0.5, 0.0);
     }
 
-    fn ray_color(&mut self, ray: &Ray, world: &ObjectSet, depth: usize) -> Color {
+    fn ray_color(&mut self, ray: Ray, world: &ObjectSet, depth: usize) -> Color {
         if depth >= self.max_ray_bounces {
             return Color::new(0.0, 0.0, 0.0);
         }
 
-        if let Some((t, obj)) = world.intersects(ray, &Interval::new(0.001, f64::INFINITY)) {
-            let point = ray.at(t);
-            let norm = *obj.normal(point).direction();
-            // Lambertian diffuse method
-            let direction = Vec3::random_unit_vector(&mut self.rng) + norm;
-            // Random diffuse method
-            //let direction = Vec3::random_on_normal(&mut self.rng, norm);
-            return self.ray_color(&Ray::new(point, direction), world, depth + 1) * 0.5;
+        if let Some((t, obj)) = world.intersects(&ray, Interval::new(0.001, f64::INFINITY)) {
+            if let Some(scatter_ray) = obj.scatter(&ray, ray.at(t), &mut self.rng) {
+                return self.ray_color(scatter_ray.ray, world, depth + 1) * scatter_ray.attenuation;
+            } else {
+                return Color::new(0.0, 0.0, 0.0);
+            }
         }
 
         let y = ray.direction().unit().y();

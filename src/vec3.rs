@@ -6,7 +6,7 @@ use rand::Rng;
 use rand::distr::{Uniform, Distribution as _};
 
 pub trait Float:
-    FloatBase + ops::AddAssign + ops::SubAssign + ops::MulAssign + ops::DivAssign + ToString
+    FloatBase + ops::AddAssign + ops::SubAssign + ops::MulAssign + ops::DivAssign + ToString + std::fmt::Debug
 {
 }
 impl Float for f32 {}
@@ -64,6 +64,24 @@ impl<T: Float> ops::Sub for Vec3<T> {
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Vec3::new(self[0] - rhs[0], self[1] - rhs[1], self[2] - rhs[2])
+    }
+}
+
+impl<T: Float> ops::Sub<T> for Vec3<T> {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: T) -> Self::Output {
+        Vec3::new(self[0] - rhs, self[1] - rhs, self[2] - rhs)
+    }
+}
+
+impl ops::Sub<Vec3<f64>> for f64 {
+    type Output = Vec3<f64>;
+
+    #[inline]
+    fn sub(self, rhs: Vec3<f64>) -> Vec3<f64> {
+        Vec3::new(self - rhs[0], self - rhs[1], self - rhs[2])
     }
 }
 
@@ -224,6 +242,22 @@ impl<T: Float> Vec3<T> {
     pub fn near_zero(&self) -> bool {
         let e = T::from(1e-8).unwrap();
         self[0].abs() < e && self[1].abs() < e && self[2].abs() < e
+    }
+
+    /// Reflect an incident vector according to a given normal unit vector
+    #[inline]
+    pub fn reflect(&self, normal: Self) -> Self {
+        *self - normal * self.dot(normal) * T::from(2).unwrap()
+    }
+
+    /// Refract an incident vector according to a given normal unit vector and refractive index
+    #[inline]
+    pub fn refract(&self, normal: Self, refr_idx: T) -> Self {
+        let incident = self.to_unit();
+        let cos_theta = (-incident).dot(normal).min(T::from(1.0).unwrap());
+        let out_perpendicular = (incident + normal * cos_theta) * refr_idx;
+        let out_parallel = normal * (-(((T::from(1.0).unwrap() - out_perpendicular.length_squared()).abs()).sqrt()));
+        out_perpendicular + out_parallel
     }
 }
 

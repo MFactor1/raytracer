@@ -1,4 +1,7 @@
 pub mod lambertian;
+pub mod random;
+pub mod metal;
+pub mod dielectric;
 
 use rand::Rng;
 

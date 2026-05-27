@@ -1,14 +1,17 @@
 pub mod sphere;
 
+use rand::rngs::SmallRng;
+
 use super::interval::Interval;
 use super::ray::Ray;
 use super::vec3::Point3;
+use super::materials::ScatterRay;
 
-pub trait Object: Intersectable + Normal {}
+pub trait Object: Intersectable + Normal + Scatter {}
 
 pub trait Intersectable {
     /// Gets the t value of the first intersection point, if there exists one.
-    fn intersects(&self, ray: &Ray, interval: &Interval) -> Option<f64>;
+    fn intersects(&self, ray: &Ray, interval: Interval) -> Option<f64>;
 }
 
 pub trait Normal {
@@ -19,7 +22,7 @@ pub trait Normal {
 }
 
 pub trait Scatter {
-    fn scatter(&self, ray: &Ray, point: Point3<f64>) -> 
+    fn scatter(&self, incident: &Ray, point: Point3<f64>, rng: &mut SmallRng) -> Option<ScatterRay>;
 }
 
 pub struct ObjectSet(Vec<Box<dyn Object>>);
@@ -41,11 +44,11 @@ impl ObjectSet {
     }
 
     #[inline]
-    pub fn intersects(&self, ray: &Ray, interval: &Interval) -> Option<(f64, &Box<dyn Object>)> {
+    pub fn intersects(&self, ray: &Ray, interval: Interval) -> Option<(f64, &Box<dyn Object>)> {
         let mut hit = None;
         let mut range = interval.clone();
         for obj in self.0.iter() {
-            if let Some(t) = obj.intersects(ray, &range) {
+            if let Some(t) = obj.intersects(ray, range) {
                 hit = Some((t, obj));
                 range.max = t
             }

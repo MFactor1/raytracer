@@ -6,25 +6,20 @@ use crate::vec3::Vec3;
 use super::Material;
 use super::ScatterRay;
 
-pub struct Lambertian {
+pub struct Random {
     pub albedo: Color
 }
 
-impl Lambertian {
+impl Random {
     pub fn new(albedo: Color) -> Self {
         Self { albedo }
     }
 }
 
-impl Material for Lambertian {
+impl Material for Random {
     fn scatter<R: Rng>(&self, _incident: &Ray, normal: &Ray, rng: &mut R) -> Option<ScatterRay> {
-        // Lambertian diffuse method
-        let mut direction = Vec3::random_unit_vector(rng) + normal.direction();
-
-        // Catch degenerate near-zero scatter directions that may underflow on square root
-        if direction.near_zero() {
-            direction = normal.direction();
-        }
+        // Random diffuse method
+        let direction = Vec3::random_on_normal(rng, normal.direction());
 
         Some(ScatterRay::new(Ray::new(normal.origin(), direction), self.albedo))
     }
