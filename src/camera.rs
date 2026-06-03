@@ -44,19 +44,23 @@ pub struct Camera {
     pub max_ray_bounces: usize,
     /// Randomizer used within Camera
     pub rng: rand::rngs::SmallRng,
+    /// Vertical FOV
+    pub vfov: f64,
 }
 
 impl Camera {
     pub fn new(
         frame_width: usize,
         aspect_ratio: f64,
-        vp_height: f64,
         focal_length: f64,
         camera_center: Point3<f64>,
         pix_samples: usize,
         max_ray_bounces: usize,
+        vfov: f64,
     ) -> Self {
         let frame_height = (frame_width as f64 / aspect_ratio) as usize;
+        let view_height = (vfov.to_radians() / 2.0).tan();
+        let vp_height = 2.0 * view_height * focal_length;
         let vp_width = (vp_height * (frame_width as f64 / frame_height as f64)).max(1.0);
         let vp_u = Vec3::new(vp_width, 0.0, 0.0);
         let vp_v = Vec3::new(0.0, -vp_height, 0.0);
@@ -83,6 +87,7 @@ impl Camera {
             pix_samples,
             max_ray_bounces,
             rng,
+            vfov,
         }
     }
 
