@@ -7,7 +7,7 @@ use super::ray::Ray;
 use super::vec3::Point3;
 use super::materials::ScatterRay;
 
-pub trait Object: Intersectable + Normal + Scatter {}
+pub trait Object: Intersectable + Normal + Scatter + Send + Sync {}
 
 pub trait Intersectable {
     /// Gets the t value of the first intersection point, if there exists one.

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use rand::rngs::SmallRng;
 
@@ -8,16 +8,16 @@ use crate::ray::Ray;
 use crate::vec3::Point3;
 use crate::materials::{Material, ScatterRay};
 
-impl<M: Material> Object for Sphere<M> {}
+impl<M: Material + Send + Sync> Object for Sphere<M> {}
 
 pub struct Sphere<M: Material> {
     center: Point3<f64>,
     radius: f64,
-    material: Rc<M>,
+    material: Arc<M>,
 }
 
 impl<M: Material> Sphere<M> {
-    pub fn new(center: Point3<f64>, radius: f64, material: Rc<M>) -> Self {
+    pub fn new(center: Point3<f64>, radius: f64, material: Arc<M>) -> Self {
         Self { center, radius, material }
     }
 }

@@ -1,9 +1,14 @@
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::sync::{Arc, Mutex, mpsc};
+use std::thread;
 
 use rand::distr::{Uniform, Distribution as _};
+use rand::Rng;
 use indicatif::ProgressBar;
 use log;
+use rand::rngs::SmallRng;
 
 use super::color::Color;
 use super::interval::Interval;
@@ -11,87 +16,85 @@ use super::objects::ObjectSet;
 use super::ray::Ray;
 use super::vec3::{Point3, Vec3};
 
+#[derive(Clone, Copy)]
 pub struct Camera {
     /// Num horizontal pixels
-    pub frame_width: usize,
+    frame_width: usize,
     /// Num vertical pixels
-    pub frame_height: usize,
-    /// Target aspect ratio
-    pub aspect_ratio: f64,
-    /// Viewport width
-    pub vp_width: f64,
-    /// Viewport height
-    pub vp_height: f64,
-    /// Vector along viewport width
-    pub vp_u: Vec3<f64>,
-    /// Vector along viewport height
-    pub vp_v: Vec3<f64>,
+    frame_height: usize,
     /// Horizonal offset between pixels
-    pub pix_delta_u: Vec3<f64>,
+    pix_delta_u: Vec3<f64>,
     /// Vertical offset between pixels
-    pub pix_delta_v: Vec3<f64>,
-    /// Point of the top left corner of the viewport
-    pub vp_upper_left: Point3<f64>,
+    pix_delta_v: Vec3<f64>,
     /// Point of the top left pixel in the viewport
-    pub pix_00: Point3<f64>,
-    /// Distance of camera from viewport
-    pub focal_length: f64,
+    pix_00: Point3<f64>,
     /// Point of the center of the camera
-    pub camera_center: Point3<f64>,
+    camera_center: Point3<f64>,
     /// Number of samples to take per pixel
-    pub pix_samples: usize,
+    pix_samples: usize,
     /// Maximum number of ray bounces into the scene
-    pub max_ray_bounces: usize,
-    /// Randomizer used within Camera
-    pub rng: rand::rngs::SmallRng,
-    /// Vertical FOV
-    pub vfov: f64,
+    max_ray_bounces: usize,
+    /// Variation angle of rays through each pixel
+    defocus_angle: f64,
+    // Defocus disk horizontal radius
+    defocus_disk_u: Vec3<f64>,
+    // Defocus disk vertical radius
+    defocus_disk_v: Vec3<f64>,
 }
 
 impl Camera {
     pub fn new(
         frame_width: usize,
         aspect_ratio: f64,
-        focal_length: f64,
         camera_center: Point3<f64>,
+        look_at: Point3<f64>,
+        vup: Vec3<f64>,
         pix_samples: usize,
         max_ray_bounces: usize,
         vfov: f64,
+        defocus_angle: f64,
+        focus_dist: f64,
     ) -> Self {
+        let look_vec = camera_center - look_at;
+        let w = look_vec.unit();
+        let u = vup.cross(w).unit();
+        let v = w.cross(u);
+
         let frame_height = (frame_width as f64 / aspect_ratio) as usize;
+        let frame_height = if frame_width < 1 { 1 } else { frame_height };
         let view_height = (vfov.to_radians() / 2.0).tan();
-        let vp_height = 2.0 * view_height * focal_length;
+        let vp_height = 2.0 * view_height * focus_dist;
         let vp_width = (vp_height * (frame_width as f64 / frame_height as f64)).max(1.0);
-        let vp_u = Vec3::new(vp_width, 0.0, 0.0);
-        let vp_v = Vec3::new(0.0, -vp_height, 0.0);
+
+        let vp_u = u * vp_width;
+        let vp_v = -v * vp_height;
+
         let pix_delta_u = vp_u / frame_width as f64;
         let pix_delta_v = vp_v / frame_height as f64;
-        let vp_upper_left = camera_center - Vec3::new(0.0, 0.0, focal_length) - (vp_u + vp_v) * 0.5;
+        let vp_upper_left = camera_center - (w * focus_dist) - vp_u / 2.0 - vp_v / 2.0;
         let pix_00 = vp_upper_left + (pix_delta_u + pix_delta_v) * 0.5;
-        let rng = rand::make_rng();
+
+        let defocus_radius = focus_dist * (defocus_angle / 2.).to_radians().tan();
+        let defocus_disk_u = u * defocus_radius;
+        let defocus_disk_v = v * defocus_radius;
 
         Self {
             frame_width,
             frame_height,
-            aspect_ratio,
-            vp_width,
-            vp_height,
-            vp_u,
-            vp_v,
             pix_delta_u,
             pix_delta_v,
-            vp_upper_left,
             pix_00,
-            focal_length,
             camera_center,
             pix_samples,
             max_ray_bounces,
-            rng,
-            vfov,
+            defocus_angle,
+            defocus_disk_u,
+            defocus_disk_v,
         }
     }
 
-    pub fn render(&mut self, world: &ObjectSet, file: &str) -> std::io::Result<()> {
+    pub fn render(&mut self, world: ObjectSet, file: &str) -> std::io::Result<()> {
+        const NUM_WORKERS: usize = 16;
         let file = File::create(file)?;
         let mut writer = BufWriter::new(file);
 
@@ -103,23 +106,86 @@ impl Camera {
 
         let bar = ProgressBar::new((self.frame_height * self.frame_width * self.pix_samples) as u64);
 
-        for j in 0..self.frame_height {
-            bar.inc((self.frame_width * self.pix_samples) as u64);
-            for i in 0..self.frame_width {
-                let pix = self.pix_00 + self.pix_delta_u * i as f64 + self.pix_delta_v * j as f64;
-                log::debug!("Pixel: {:?}", pix);
+        let (in_tx, in_rx) = mpsc::channel::<usize>();
+        let (out_tx, out_rx) = mpsc::channel::<(usize, Vec<Color>)>();
+        let in_rx = Arc::new(Mutex::new(in_rx));
+        let mut workers = Vec::with_capacity(NUM_WORKERS);
+        let world = Arc::new(world);
+        let cam = Arc::new(self.clone());
 
-                let mut pix_color = Color::new(0.0, 0.0, 0.0);
-                for _ in 0..self.pix_samples {
-                    let ray = self.get_ray(i, j);
-                    pix_color += self.ray_color(ray, world, 0);
+        for _ in 0..NUM_WORKERS {
+            let in_rx = in_rx.clone();
+            let out_tx = out_tx.clone();
+            let world = world.clone();
+            let cam = cam.clone();
+            let mut rng = rand::make_rng();
+
+            workers.push(thread::spawn(move || {
+                loop {
+                    let line = {
+                        let rx = in_rx.lock().unwrap();
+                        rx.recv()
+                    };
+
+                    match line {
+                        Ok(line) => {
+                            let result = cam.process_line(&world, line, &mut rng);
+                            out_tx.send((line, result)).unwrap();
+                        }
+                        Err(_) => break, // channel closed
+                    }
                 }
-                pix_color /= self.pix_samples as f64;
-                pix_color.write_color(&mut writer)?;
+            }));
+        }
+
+        drop(out_tx);
+
+        for j in 0..self.frame_height {
+            in_tx.send(j).unwrap();
+        }
+
+        drop(in_tx);
+
+        let mut next = 0;
+        let mut pending = BTreeMap::new();
+
+        while let Ok((index, result)) = out_rx.recv() {
+            bar.inc((self.frame_width * self.pix_samples) as u64);
+            pending.insert(index, result);
+
+            while let Some(result) = pending.remove(&next) {
+                for pix in result {
+                    pix.write_color(&mut writer)?;
+                }
+                next += 1;
             }
         }
+
         writer.flush()?;
+
+        for worker in workers {
+            worker.join().unwrap();
+        }
         Ok(())
+    }
+
+    /// Process one line of pixels, and return the result
+    fn process_line(self, world: &ObjectSet, line: usize, rng: &mut SmallRng) -> Vec<Color> {
+        let mut pixels = Vec::with_capacity(self.frame_width);
+        for i in 0..self.frame_width {
+            let pix = self.pix_00 + self.pix_delta_u * i as f64 + self.pix_delta_v * line as f64;
+            log::debug!("Pixel: {:?}", pix);
+
+            let mut pix_color = Color::new(0.0, 0.0, 0.0);
+            for _ in 0..self.pix_samples {
+                let ray = self.get_ray(i, line, rng);
+                pix_color += self.ray_color(ray, world, 0, rng);
+            }
+            pix_color /= self.pix_samples as f64;
+            pixels.push(pix_color);
+        }
+
+        pixels
     }
 
     /// Gets a non-randomized ray, useful for debugging
@@ -132,28 +198,34 @@ impl Camera {
     }
 
     /// Gets a Ray from the camera to a random location inside the given pixel.
-    fn get_ray(&mut self, x: usize, y: usize) -> Ray {
-        let offset = self.sample_square();
+    fn get_ray<R: Rng>(&self, x: usize, y: usize, rng: &mut R) -> Ray {
+        let offset = self.sample_square(rng);
         let pixel_loc = self.pix_00
             + self.pix_delta_u * (x as f64 + offset.x())
             + self.pix_delta_v * (y as f64 + offset.y());
 
-        Ray::new(self.camera_center, pixel_loc - self.camera_center)
+        let ray_origin = if self.defocus_angle <= 0. { self.camera_center } else { self.defocus_disk_sample(rng) };
+        Ray::new(ray_origin, pixel_loc - ray_origin)
     }
 
-    fn sample_square(&mut self) -> Vec3<f64> {
+    fn sample_square<R: Rng>(&self, rng: &mut R) -> Vec3<f64> {
         let dist = Uniform::new(0.0, 0.999).unwrap();
-        return Vec3::new(dist.sample(&mut self.rng) - 0.5, dist.sample(&mut self.rng) - 0.5, 0.0);
+        Vec3::new(dist.sample(rng) - 0.5, dist.sample(rng) - 0.5, 0.0)
     }
 
-    fn ray_color(&mut self, ray: Ray, world: &ObjectSet, depth: usize) -> Color {
+    fn defocus_disk_sample<R: Rng>(&self, rng: &mut R) -> Point3<f64> {
+        let p = Point3::random_on_unit_disk(rng);
+        self.camera_center + (self.defocus_disk_u * p.x()) + (self.defocus_disk_v * p.y())
+    }
+
+    fn ray_color(&self, ray: Ray, world: &ObjectSet, depth: usize, rng: &mut SmallRng) -> Color {
         if depth >= self.max_ray_bounces {
             return Color::new(0.0, 0.0, 0.0);
         }
 
         if let Some((t, obj)) = world.intersects(&ray, Interval::new(0.001, f64::INFINITY)) {
-            if let Some(scatter_ray) = obj.scatter(&ray, ray.at(t), &mut self.rng) {
-                return self.ray_color(scatter_ray.ray, world, depth + 1) * scatter_ray.attenuation;
+            if let Some(scatter_ray) = obj.scatter(&ray, ray.at(t), rng) {
+                return self.ray_color(scatter_ray.ray, world, depth + 1, rng) * scatter_ray.attenuation;
             } else {
                 return Color::new(0.0, 0.0, 0.0);
             }

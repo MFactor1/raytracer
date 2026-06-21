@@ -164,6 +164,7 @@ impl Vec3<f64> {
         }
     }
 
+    #[inline]
     pub fn random_on_normal<R: Rng>(rng: &mut R, norm: Vec3<f64>) -> Self {
         let vec = Self::random_unit_vector(rng);
 
@@ -171,6 +172,17 @@ impl Vec3<f64> {
             vec
         } else {
             -vec
+        }
+    }
+
+    #[inline]
+    pub fn random_on_unit_disk<R: Rng>(rng: &mut R) -> Self {
+        let dist = Uniform::new(-1.0, 1.0).unwrap();
+        loop {
+            let p = Vec3::new(dist.sample(rng), dist.sample(rng), 0.0);
+            if p.length_squared() < 1. {
+                return p;
+            }
         }
     }
 }
