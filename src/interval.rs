@@ -20,6 +20,14 @@ impl Interval {
     }
 
     #[inline]
+    pub fn union(a: &Interval, b: &Interval) -> Self {
+        Self {
+            min: a.min.min(b.min),
+            max: a.max.max(b.max),
+        }
+    }
+
+    #[inline]
     pub fn size(&self) -> f64 {
         self.max - self.min
     }
@@ -37,5 +45,25 @@ impl Interval {
     #[inline]
     pub fn clamp(&self, x: f64) -> f64 {
         x.clamp(self.min, self.max)
+    }
+
+    #[inline]
+    pub fn expand(&self, delta: f64) -> Self {
+        let padding = delta / 2.;
+        Self {
+            min: self.min - padding,
+            max: self.max + padding
+        }
+    }
+
+    #[inline]
+    pub fn median(&self) -> f64 {
+        (self.min + self.max) / 2.
+    }
+}
+
+impl Default for Interval {
+    fn default() -> Self {
+        Self { min: 0., max: 0. }
     }
 }

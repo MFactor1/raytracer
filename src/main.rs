@@ -1,6 +1,7 @@
 use core::f64;
 use std::sync::Arc;
 
+use pathtracer_lib::bvh::BvhNode;
 use pathtracer_lib::camera::Camera;
 use pathtracer_lib::materials::dielectric::Dielectric;
 use pathtracer_lib::materials::metal::Metal;
@@ -65,18 +66,20 @@ fn main() {
     let mat3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.));
     world.push(Sphere::new(Point3::new(4., 1., 0.), 1., mat3));
 
+    let bounded_world = BvhNode::from_objset(world);
+
     let mut camera = Camera::new(
     3440,
         21.0 / 9.0,
         Point3::new(13., 2., 3.),
         Point3::new(0., 0., 0.),
         Vec3::new(0., 1., 0.),
-        500,
+        50,
         50,
         20.0,
         0.6,
         10.,
     );
 
-    camera.render(world, "output.ppm").unwrap();
+    camera.render(bounded_world, "output.ppm").unwrap();
 }

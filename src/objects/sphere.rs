@@ -3,9 +3,11 @@ use std::sync::Arc;
 use rand::rngs::SmallRng;
 
 use super::{Intersectable, Normal, Scatter, Object};
+use crate::aabb::Aabb;
 use crate::interval::Interval;
+use crate::objects::{AxisComparable, Bbox};
 use crate::ray::Ray;
-use crate::vec3::Point3;
+use crate::vec3::{Point3, Vec3};
 use crate::materials::{Material, ScatterRay};
 
 impl<M: Material + Send + Sync> Object for Sphere<M> {}
@@ -14,16 +16,23 @@ pub struct Sphere<M: Material> {
     center: Point3<f64>,
     radius: f64,
     material: Arc<M>,
+    bbox: Aabb,
 }
 
 impl<M: Material> Sphere<M> {
     pub fn new(center: Point3<f64>, radius: f64, material: Arc<M>) -> Self {
-        Self { center, radius, material }
+        // The bbox is just constructed using the vector of size r, r, r,
+        // and using center - v, center + v as the extrema. This guarentees
+        // the sphere fits exactly in the bbox.
+        let radius_vector = Vec3::new(radius, radius, radius);
+        let bbox = Aabb::from_extrema(center - radius_vector, center + radius_vector);
+
+        Self { center, radius, material, bbox }
     }
 }
 
 impl<M: Material> Intersectable for Sphere<M> {
-    fn intersects(&self, ray: &Ray, interval: Interval) -> Option<f64> {
+    fn intersects(&self, ray: &Ray, interval: &Interval) -> Option<f64> {
         let o_to_c = self.center - ray.origin();
         let a = ray.direction().length_squared();
         // b = -2h: allows for a simplification
@@ -66,5 +75,19 @@ impl<M: Material> Scatter for Sphere<M> {
     #[inline]
     fn scatter(&self, incident: &Ray, point: Point3<f64>, rng: &mut SmallRng) -> Option<ScatterRay> {
         self.material.scatter(incident, &self.normal(point), rng)
+    }
+}
+
+impl<M: Material> Bbox for Sphere<M> {
+    #[inline]
+    fn bounding_box(&self) -> &Aabb {
+        &self.bbox
+    }
+}
+
+impl<M: Material> AxisComparable for Sphere<M> {
+    #[inline]
+    fn axis_median(&self, axis: usize) -> f64 {
+        self.bounding_box().get_axis(axis).median()
     }
 }

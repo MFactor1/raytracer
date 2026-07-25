@@ -10,9 +10,11 @@ use indicatif::ProgressBar;
 use log;
 use rand::rngs::SmallRng;
 
+use crate::bvh::{BvhNode};
+
 use super::color::Color;
 use super::interval::Interval;
-use super::objects::ObjectSet;
+use super::objects::{IntersectableContainer as _};
 use super::ray::Ray;
 use super::vec3::{Point3, Vec3};
 
@@ -93,7 +95,7 @@ impl Camera {
         }
     }
 
-    pub fn render(&mut self, world: ObjectSet, file: &str) -> std::io::Result<()> {
+    pub fn render(&mut self, world: BvhNode, file: &str) -> std::io::Result<()> {
         const NUM_WORKERS: usize = 16;
         let file = File::create(file)?;
         let mut writer = BufWriter::new(file);
@@ -170,7 +172,7 @@ impl Camera {
     }
 
     /// Process one line of pixels, and return the result
-    fn process_line(self, world: &ObjectSet, line: usize, rng: &mut SmallRng) -> Vec<Color> {
+    fn process_line(self, world: &BvhNode, line: usize, rng: &mut SmallRng) -> Vec<Color> {
         let mut pixels = Vec::with_capacity(self.frame_width);
         for i in 0..self.frame_width {
             let pix = self.pix_00 + self.pix_delta_u * i as f64 + self.pix_delta_v * line as f64;
@@ -189,6 +191,7 @@ impl Camera {
     }
 
     /// Gets a non-randomized ray, useful for debugging
+    #[allow(dead_code)]
     fn get_static_ray(&self, x: usize, y: usize) -> Ray {
         let pixel_loc = self.pix_00
             + self.pix_delta_u * x as f64
@@ -218,12 +221,12 @@ impl Camera {
         self.camera_center + (self.defocus_disk_u * p.x()) + (self.defocus_disk_v * p.y())
     }
 
-    fn ray_color(&self, ray: Ray, world: &ObjectSet, depth: usize, rng: &mut SmallRng) -> Color {
+    fn ray_color(&self, ray: Ray, world: &BvhNode, depth: usize, rng: &mut SmallRng) -> Color {
         if depth >= self.max_ray_bounces {
             return Color::new(0.0, 0.0, 0.0);
         }
 
-        if let Some((t, obj)) = world.intersects(&ray, Interval::new(0.001, f64::INFINITY)) {
+        if let Some((t, obj)) = world.find_hit(&ray, &Interval::new(0.001, f64::INFINITY)) {
             if let Some(scatter_ray) = obj.scatter(&ray, ray.at(t), rng) {
                 return self.ray_color(scatter_ray.ray, world, depth + 1, rng) * scatter_ray.attenuation;
             } else {

@@ -2,16 +2,26 @@ pub mod sphere;
 
 use rand::rngs::SmallRng;
 
+use crate::aabb::Aabb;
+
 use super::interval::Interval;
 use super::ray::Ray;
 use super::vec3::Point3;
 use super::materials::ScatterRay;
 
-pub trait Object: Intersectable + Normal + Scatter + Send + Sync {}
+pub trait Object: Intersectable + AxisComparable + Normal + Scatter + Bbox + Send + Sync {}
 
 pub trait Intersectable {
     /// Gets the t value of the first intersection point, if there exists one.
-    fn intersects(&self, ray: &Ray, interval: Interval) -> Option<f64>;
+    fn intersects(&self, ray: &Ray, interval: &Interval) -> Option<f64>;
+}
+
+pub trait IntersectableContainer {
+    fn find_hit(&self, ray: &Ray, interval: &Interval) -> Option<(f64, &Box<dyn Object>)>;
+}
+
+pub trait AxisComparable {
+    fn axis_median(&self, axis: usize) -> f64;
 }
 
 pub trait Normal {
@@ -25,30 +35,45 @@ pub trait Scatter {
     fn scatter(&self, incident: &Ray, point: Point3<f64>, rng: &mut SmallRng) -> Option<ScatterRay>;
 }
 
-pub struct ObjectSet(Vec<Box<dyn Object>>);
+pub trait Bbox {
+    fn bounding_box(&self) -> &Aabb;
+}
+
+pub struct ObjectSet {
+    pub objs: Vec<Box<dyn Object>>,
+    bbox: Option<Aabb>,
+}
 
 impl ObjectSet {
     #[inline]
     pub fn new() -> Self {
-        Self(Vec::new())
+        Self { objs: Vec::new(), bbox: None}
     }
 
     #[inline]
     pub fn push<Obj: Object + 'static>(&mut self, obj: Obj) {
-        self.0.push(Box::new(obj))
+        if let Some(bbox) = &self.bbox {
+            self.bbox = Some(Aabb::enclose(&bbox, obj.bounding_box()))
+        } else {
+            self.bbox = Some(obj.bounding_box().clone());
+        }
+
+        self.objs.push(Box::new(obj));
     }
 
     #[inline]
     pub fn clear(&mut self) {
-        self.0.clear()
+        self.objs.clear()
     }
+}
 
+impl IntersectableContainer for ObjectSet{
     #[inline]
-    pub fn intersects(&self, ray: &Ray, interval: Interval) -> Option<(f64, &Box<dyn Object>)> {
+    fn find_hit(&self, ray: &Ray, interval: &Interval) -> Option<(f64, &Box<dyn Object>)> {
         let mut hit = None;
         let mut range = interval.clone();
-        for obj in self.0.iter() {
-            if let Some(t) = obj.intersects(ray, range) {
+        for obj in self.objs.iter() {
+            if let Some(t) = obj.intersects(ray, &range) {
                 hit = Some((t, obj));
                 range.max = t
             }
