@@ -60,6 +60,11 @@ impl Interval {
     pub fn median(&self) -> f64 {
         (self.min + self.max) / 2.
     }
+
+    #[inline]
+    pub fn len(&self) -> f64 {
+        (self.max - self.min).abs()
+    }
 }
 
 impl Default for Interval {

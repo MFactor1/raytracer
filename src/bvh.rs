@@ -10,7 +10,7 @@ pub struct BvhNode {
 
 impl BvhNode {
     pub fn new(mut objs: Vec<Box<dyn Object>>) -> Self {
-        let axis: usize = rand::random_range(0..3);
+        assert!(objs.len() > 0);
 
         if objs.len() == 1 {
             let obj = objs.pop().unwrap();
@@ -22,6 +22,17 @@ impl BvhNode {
                 bbox
             }
         }
+
+        let mut enclosing = None;
+        for obj in objs.iter() {
+            if let Some(bbox) = enclosing {
+                enclosing = Some(Aabb::enclose(&bbox, obj.bounding_box()));
+            } else {
+                enclosing = Some(obj.bounding_box().clone());
+            }
+        }
+
+        let axis = enclosing.unwrap().longest_axis();
 
         objs.sort_by(|a, b| {
             a.axis_median(axis).total_cmp(&b.axis_median(axis))

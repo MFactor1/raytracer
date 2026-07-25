@@ -80,4 +80,12 @@ impl Aabb {
             _ => &self.z,
         }
     }
+
+    pub fn longest_axis(&self) -> usize {
+        if self.x.len() > self.y.len() {
+            if self.x.len() > self.z.len() { 0 } else { 2 }
+        } else {
+            if self.y.len() > self.z.len() { 1 } else { 2 }
+        }
+    }
 }
