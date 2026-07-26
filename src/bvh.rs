@@ -1,4 +1,4 @@
-use crate::{aabb::Aabb, interval::Interval, objects::{Bbox, IntersectableContainer, Object, ObjectSet}, ray::Ray};
+use crate::{aabb::Aabb, interval::Interval, objects::{Bbox, Hit, IntersectableContainer, Object, ObjectSet}, ray::Ray};
 
 
 pub struct BvhNode {
@@ -57,14 +57,14 @@ impl BvhNode {
 }
 
 impl IntersectableContainer for BvhNode {
-    fn find_hit(&self, ray: &Ray, interval: &Interval) -> Option<(f64, &Box<dyn Object>)> {
+    fn find_hit(&self, ray: &Ray, interval: &Interval) -> Option<(Hit, &Box<dyn Object>)> {
         if !self.bbox.hit(ray, interval) {
             return None
         }
 
         if let Some(obj) = &self.obj {
-            if let Some(ti) = obj.intersects(ray, interval) {
-                return Some((ti, obj))
+            if let Some(hit) = obj.intersects(ray, interval) {
+                return Some((hit, obj))
             }
         }
 
@@ -77,8 +77,8 @@ impl IntersectableContainer for BvhNode {
         }
 
         // If left had a hit, only check right for t >= left_hit (i.e. in front of left hit)
-        let check_interval_right = if let Some(hit_left) = hit_result {
-            &Interval::new(interval.min, hit_left.0)
+        let check_interval_right = if let Some(hit_left) = &hit_result {
+            &Interval::new(interval.min, hit_left.0.t)
         } else {
             interval
         };

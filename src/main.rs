@@ -6,6 +6,7 @@ use pathtracer_lib::camera::Camera;
 use pathtracer_lib::materials::dielectric::Dielectric;
 use pathtracer_lib::materials::metal::Metal;
 use pathtracer_lib::objects::ObjectSet;
+use pathtracer_lib::objects::quad::Quad;
 use pathtracer_lib::objects::sphere::Sphere;
 use pathtracer_lib::materials::lambertian::Lambertian;
 use pathtracer_lib::texture::Checkered;
@@ -153,12 +154,47 @@ fn perlin_spheres() {
     camera.render(bounded_world, "output.ppm").unwrap();
 }
 
+fn quads() {
+    colog::init();
+    let mut world = ObjectSet::new();
+
+    let red = Arc::new(Lambertian::from_color(Color::new(1., 0.2, 0.2)));
+    let green = Arc::new(Lambertian::from_color(Color::new(0.2, 1., 0.2)));
+    let blue = Arc::new(Lambertian::from_color(Color::new(0.2, 0.2, 1.)));
+    let orange = Arc::new(Lambertian::from_color(Color::new(1., 0.5, 0.0)));
+    let teal = Arc::new(Lambertian::from_color(Color::new(0.2, 0.8, 0.8)));
+
+    world.push(Quad::new(Point3::new(-3., -2., 5.), Vec3::new(0., 0., -4.), Vec3::new(0., 4., 0.), red.clone()));
+    world.push(Quad::new(Point3::new(-2., -2., 0.), Vec3::new(4., 0., 0.), Vec3::new(0., 4., 0.), green.clone()));
+    world.push(Quad::new(Point3::new(3., -2., 1.), Vec3::new(0., 0., 4.), Vec3::new(0., 4., 0.), blue.clone()));
+    world.push(Quad::new(Point3::new(-2., 3., 1.), Vec3::new(4., 0., 0.), Vec3::new(0., 0., 4.), orange.clone()));
+    world.push(Quad::new(Point3::new(-2., -3., 5.), Vec3::new(4., 0., 0.), Vec3::new(0., 0., -4.), teal.clone()));
+
+    let bounded_world = BvhNode::from_objset(world);
+
+    let mut camera = Camera::new(
+    3440,
+        21.0 / 9.0,
+        Point3::new(0., 0., 9.),
+        Point3::new(0., 0., 0.),
+        Vec3::new(0., 1., 0.),
+        500,
+        50,
+        80.0,
+        0.,
+        10.,
+    );
+
+    camera.render(bounded_world, "output.ppm").unwrap();
+}
+
 fn main() {
-    match 4 {
+    match 5 {
         1 => book_1_demo(),
         2 => checkered_spheres(),
         3 => earth(),
         4 => perlin_spheres(),
+        5 => quads(),
         _ => panic!("Not an option"),
     }
 }

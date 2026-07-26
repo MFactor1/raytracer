@@ -1,7 +1,7 @@
 use rand::Rng;
 
 use crate::color::Color;
-use crate::objects::Object;
+use crate::objects::Hit;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 use super::Material;
@@ -19,12 +19,12 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter<R: Rng, O: Object>(&self, incident: &Ray, normal: &Ray, rng: &mut R, _obj: &O) -> Option<ScatterRay> {
-        let reflected = incident.direction().reflect(normal.direction());
+    fn scatter<R: Rng>(&self, incident: &Ray, hit: &Hit, rng: &mut R) -> Option<ScatterRay> {
+        let reflected = incident.direction().reflect(hit.normal.direction());
         let direction = (reflected + (Vec3::random_unit_vector(rng) * self.fuzz)).unit();
 
-        if direction.dot(normal.direction()) > 0.0 {
-            Some(ScatterRay::new(Ray::new(normal.origin(), direction), self.albedo))
+        if direction.dot(hit.normal.direction()) > 0.0 {
+            Some(ScatterRay::new(Ray::new(hit.normal.origin(), direction), self.albedo))
         } else {
             None
         }

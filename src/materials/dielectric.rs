@@ -3,7 +3,7 @@ use rand::distr::Distribution;
 use rand::distr::Uniform;
 
 use crate::color::Color;
-use crate::objects::Object;
+use crate::objects::Hit;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 use super::Material;
@@ -22,10 +22,10 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter<R: Rng, O: Object>(&self, incident: &Ray, normal: &Ray, rng: &mut R, _obj: &O) -> Option<ScatterRay> {
-        let internal = incident.direction().dot(normal.direction()) > 0.0;
+    fn scatter<R: Rng>(&self, incident: &Ray, hit: &Hit, rng: &mut R) -> Option<ScatterRay> {
+        let internal = incident.direction().dot(hit.normal.direction()) > 0.0;
         let ri = if internal { self.refr_idx } else { 1.0 / self.refr_idx };
-        let norm = if internal { -normal.direction() } else { normal.direction() };
+        let norm = if internal { -hit.normal.direction() } else { hit.normal.direction() };
 
         let cos_theta = (-incident.direction().unit()).dot(norm).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
@@ -40,7 +40,7 @@ impl Material for Dielectric {
             direction = incident.direction().refract(norm, ri);
         }
 
-        Some(ScatterRay::new(Ray::new(normal.origin(), (direction + fuzz_vec).unit()), self.albedo))
+        Some(ScatterRay::new(Ray::new(hit.normal.origin(), (direction + fuzz_vec).unit()), self.albedo))
     }
 }
 

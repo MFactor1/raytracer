@@ -3,7 +3,7 @@ use std::sync::Arc;
 use rand::Rng;
 
 use crate::color::Color;
-use crate::objects::Object;
+use crate::objects::Hit;
 use crate::ray::Ray;
 use crate::texture::SolidColor;
 use crate::texture::Texture;
@@ -26,16 +26,15 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter<R: Rng, O: Object>(&self, _incident: &Ray, normal: &Ray, rng: &mut R, obj: &O) -> Option<ScatterRay> {
+    fn scatter<R: Rng>(&self, _incident: &Ray, hit: &Hit, rng: &mut R) -> Option<ScatterRay> {
         // Lambertian diffuse method
-        let mut direction = Vec3::random_unit_vector(rng) + normal.direction();
+        let mut direction = Vec3::random_unit_vector(rng) + hit.normal.direction();
 
         // Catch degenerate near-zero scatter directions that may underflow on square root
         if direction.near_zero() {
-            direction = normal.direction();
+            direction = hit.normal.direction();
         }
 
-        let (u, v) = obj.get_uv(normal.origin());
-        Some(ScatterRay::new(Ray::new(normal.origin(), direction), self.texture.value(u, v, normal.origin())))
+        Some(ScatterRay::new(Ray::new(hit.normal.origin(), direction), self.texture.value(hit.u, hit.v, hit.normal.origin())))
     }
 }

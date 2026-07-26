@@ -13,7 +13,9 @@ pub struct Aabb {
 
 impl Aabb {
     pub fn new(x: Interval, y: Interval, z: Interval) -> Self {
-        Self { x, y, z }
+        let mut slf = Self { x, y, z };
+        slf.pad_to_min();
+        slf
     }
 
     // Creates Aabb from the two extreme-most corner points
@@ -33,16 +35,16 @@ impl Aabb {
         } else {
             Interval::new(b.z(), a.z())
         };
-        Self { x, y, z }
+        Self::new(x, y, z)
     }
 
     // Creates an Aabb that perfectly encloses two existing Aabb
     pub fn enclose(a: &Aabb, b: &Aabb) -> Self {
-        Self {
-            x: Interval::union(&a.x, &b.x),
-            y: Interval::union(&a.y, &b.y),
-            z: Interval::union(&a.z, &b.z),
-        }
+        Self::new(
+            Interval::union(&a.x, &b.x),
+            Interval::union(&a.y, &b.y),
+            Interval::union(&a.z, &b.z),
+        )
     }
 
     pub fn hit(&self, incident: &Ray, interval: &Interval) -> bool {
@@ -87,5 +89,12 @@ impl Aabb {
         } else {
             if self.y.len() > self.z.len() { 1 } else { 2 }
         }
+    }
+
+    fn pad_to_min(&mut self) {
+        let min_delta = 0.0001;
+        if self.x.len() < min_delta { self.x = self.x.expand(min_delta) }
+        if self.y.len() < min_delta { self.y = self.y.expand(min_delta) }
+        if self.z.len() < min_delta { self.z = self.z.expand(min_delta) }
     }
 }

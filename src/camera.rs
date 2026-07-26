@@ -226,8 +226,8 @@ impl Camera {
             return Color::new(0.0, 0.0, 0.0);
         }
 
-        if let Some((t, obj)) = world.find_hit(&ray, &Interval::new(0.001, f64::INFINITY)) {
-            if let Some(scatter_ray) = obj.scatter(&ray, ray.at(t), rng) {
+        if let Some((hit, obj)) = world.find_hit(&ray, &Interval::new(0.001, f64::INFINITY)) {
+            if let Some(scatter_ray) = obj.scatter(&ray, &hit, rng) {
                 return self.ray_color(scatter_ray.ray, world, depth + 1, rng) * scatter_ray.attenuation;
             } else {
                 return Color::new(0.0, 0.0, 0.0);
@@ -239,5 +239,3 @@ impl Camera {
         Color::new(1.0, 1.0, 1.0) * (1.0 - scale) + Color::new(0.5, 0.7, 1.0) * scale
     }
 }
-
-
