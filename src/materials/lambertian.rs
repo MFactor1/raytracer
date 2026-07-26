@@ -36,6 +36,6 @@ impl Material for Lambertian {
         }
 
         let (u, v) = obj.get_uv(normal.origin());
-        Some(ScatterRay::new(Ray::new(normal.origin(), direction), self.texture.value(u, v, &normal.origin())))
+        Some(ScatterRay::new(Ray::new(normal.origin(), direction), self.texture.value(u, v, normal.origin())))
     }
 }

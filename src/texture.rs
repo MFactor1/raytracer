@@ -3,12 +3,12 @@ use std::{path::Path, sync::Arc};
 use image::{ImageBuffer, Rgb};
 use num_traits::Zero;
 
-use crate::{color::Color, vec3::Point3};
+use crate::{color::Color, perlin::Perlin, vec3::Point3};
 
 pub trait Texture: Send + Sync {
     /// Get the color value of a given texture at a given texture coordiate,
     /// and 3d position.
-    fn value(&self, u: f64, v: f64, p: &Point3<f64>) -> Color;
+    fn value(&self, u: f64, v: f64, p: Point3<f64>) -> Color;
 }
 
 pub struct SolidColor {
@@ -29,7 +29,7 @@ impl SolidColor {
 
 impl Texture for SolidColor {
     #[inline]
-    fn value(&self, _u: f64, _v: f64, _p: &Point3<f64>) -> Color {
+    fn value(&self, _u: f64, _v: f64, _p: Point3<f64>) -> Color {
         self.albedo
     }
 }
@@ -53,7 +53,7 @@ impl Checkered {
 }
 
 impl Texture for Checkered {
-    fn value(&self, u: f64, v: f64, p: &Point3<f64>) -> Color {
+    fn value(&self, u: f64, v: f64, p: Point3<f64>) -> Color {
         let xi = (self.inv_scale * p.x()).floor() as i64;
         let yi = (self.inv_scale * p.y()).floor() as i64;
         let zi = (self.inv_scale * p.z()).floor() as i64;
@@ -82,7 +82,7 @@ impl Image {
 }
 
 impl Texture for Image {
-    fn value(&self, u: f64, v: f64, _p: &Point3<f64>) -> Color {
+    fn value(&self, u: f64, v: f64, _p: Point3<f64>) -> Color {
         if self.buf.height() <= 0 { return Color::new(0., 1., 1.) }
 
         // Clamp input texture coordiates to [0, 1] x [1, 0]
@@ -94,5 +94,22 @@ impl Texture for Image {
         let pixel = self.buf.get_pixel(i, j);
         let color_scale = 1. / 255.;
         Color::new(color_scale * pixel[0] as f64, color_scale * pixel[1] as f64, color_scale * pixel[2] as f64)
+    }
+}
+
+pub struct Noise {
+    noise: Perlin,
+    scale: f64,
+}
+
+impl Noise {
+    pub fn new(scale: f64) -> Self {
+        Self { noise: Perlin::new() , scale }
+    }
+}
+
+impl Texture for Noise {
+    fn value(&self, _u: f64, _v: f64, p: Point3<f64>) -> Color {
+        Color::new(0.5, 0.5, 0.5) * (1. + (self.scale * p.z() + 10. * self.noise.terbulence(&p, 7)).sin())
     }
 }

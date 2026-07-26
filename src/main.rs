@@ -10,6 +10,7 @@ use pathtracer_lib::objects::sphere::Sphere;
 use pathtracer_lib::materials::lambertian::Lambertian;
 use pathtracer_lib::texture::Checkered;
 use pathtracer_lib::texture::Image;
+use pathtracer_lib::texture::Noise;
 use pathtracer_lib::vec3::Point3;
 use pathtracer_lib::vec3::Vec3;
 use pathtracer_lib::color::Color;
@@ -126,11 +127,38 @@ fn earth() {
     camera.render(bounded_world, "output.ppm").unwrap();
 }
 
+fn perlin_spheres() {
+    colog::init();
+    let mut world = ObjectSet::new();
+    let perlin_tex = Arc::new(Noise::new(4.));
+    let perlin_mat = Arc::new(Lambertian::new(perlin_tex.clone()));
+    world.push(Sphere::new(Point3::new(0., -1000., 0.), 1000., perlin_mat.clone()));
+    world.push(Sphere::new(Point3::new(0., 2., 0.), 2., perlin_mat.clone()));
+
+    let bounded_world = BvhNode::from_objset(world);
+
+    let mut camera = Camera::new(
+    3440,
+        21.0 / 9.0,
+        Point3::new(13., 2., 3.),
+        Point3::new(0., 0., 0.),
+        Vec3::new(0., 1., 0.),
+        50,
+        50,
+        20.0,
+        0.,
+        10.,
+    );
+
+    camera.render(bounded_world, "output.ppm").unwrap();
+}
+
 fn main() {
-    match 3 {
+    match 4 {
         1 => book_1_demo(),
         2 => checkered_spheres(),
         3 => earth(),
+        4 => perlin_spheres(),
         _ => panic!("Not an option"),
     }
 }
