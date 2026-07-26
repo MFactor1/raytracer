@@ -9,6 +9,7 @@ colog = "1.4.0"
 num-traits = "0.2.19"
 indicatif = "0.18.4"
 rand = "0.10.1"
+image = "0.25"
 
 [lib]
 name = "pathtracer_lib"

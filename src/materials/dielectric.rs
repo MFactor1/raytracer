@@ -3,6 +3,7 @@ use rand::distr::Distribution;
 use rand::distr::Uniform;
 
 use crate::color::Color;
+use crate::objects::Object;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 use super::Material;
@@ -21,7 +22,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter<R: Rng>(&self, incident: &Ray, normal: &Ray, rng: &mut R) -> Option<ScatterRay> {
+    fn scatter<R: Rng, O: Object>(&self, incident: &Ray, normal: &Ray, rng: &mut R, _obj: &O) -> Option<ScatterRay> {
         let internal = incident.direction().dot(normal.direction()) > 0.0;
         let ri = if internal { self.refr_idx } else { 1.0 / self.refr_idx };
         let norm = if internal { -normal.direction() } else { normal.direction() };

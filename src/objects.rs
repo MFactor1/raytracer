@@ -9,7 +9,7 @@ use super::ray::Ray;
 use super::vec3::Point3;
 use super::materials::ScatterRay;
 
-pub trait Object: Intersectable + AxisComparable + Normal + Scatter + Bbox + Send + Sync {}
+pub trait Object: Intersectable + AxisComparable + Normal + Scatter + Bbox + Textured + Send + Sync {}
 
 pub trait Intersectable {
     /// Gets the t value of the first intersection point, if there exists one.
@@ -37,6 +37,11 @@ pub trait Scatter {
 
 pub trait Bbox {
     fn bounding_box(&self) -> &Aabb;
+}
+
+pub trait Textured {
+    /// Get the texture u,v coordiates of a point on the surface of an object
+    fn get_uv(&self, point: Point3<f64>) -> (f64, f64);
 }
 
 pub struct ObjectSet {

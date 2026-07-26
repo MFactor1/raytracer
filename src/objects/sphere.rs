@@ -1,3 +1,4 @@
+use std::f64::consts::PI;
 use std::sync::Arc;
 
 use rand::rngs::SmallRng;
@@ -5,7 +6,7 @@ use rand::rngs::SmallRng;
 use super::{Intersectable, Normal, Scatter, Object};
 use crate::aabb::Aabb;
 use crate::interval::Interval;
-use crate::objects::{AxisComparable, Bbox};
+use crate::objects::{AxisComparable, Bbox, Textured};
 use crate::ray::Ray;
 use crate::vec3::{Point3, Vec3};
 use crate::materials::{Material, ScatterRay};
@@ -74,7 +75,7 @@ impl<M: Material> Normal for Sphere<M> {
 impl<M: Material> Scatter for Sphere<M> {
     #[inline]
     fn scatter(&self, incident: &Ray, point: Point3<f64>, rng: &mut SmallRng) -> Option<ScatterRay> {
-        self.material.scatter(incident, &self.normal(point), rng)
+        self.material.scatter(incident, &self.normal(point), rng, self)
     }
 }
 
@@ -89,5 +90,16 @@ impl<M: Material> AxisComparable for Sphere<M> {
     #[inline]
     fn axis_median(&self, axis: usize) -> f64 {
         self.bounding_box().get_axis(axis).median()
+    }
+}
+
+impl<M: Material> Textured for Sphere<M> {
+    #[inline]
+    fn get_uv(&self, point: Point3<f64>) -> (f64, f64) {
+        let punit = point.to_unit();
+        let theta = (-punit.y()).acos();
+        let phi = (-punit.z()).atan2(punit.x()) + PI;
+
+        (phi / (2. * PI), theta / PI)
     }
 }

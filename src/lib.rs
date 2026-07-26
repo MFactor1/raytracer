@@ -7,3 +7,4 @@ pub mod vec3;
 pub mod materials;
 pub mod aabb;
 pub mod bvh;
+pub mod texture;

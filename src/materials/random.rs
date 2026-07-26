@@ -1,6 +1,7 @@
 use rand::Rng;
 
 use crate::color::Color;
+use crate::objects::Object;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 use super::Material;
@@ -17,7 +18,7 @@ impl Random {
 }
 
 impl Material for Random {
-    fn scatter<R: Rng>(&self, _incident: &Ray, normal: &Ray, rng: &mut R) -> Option<ScatterRay> {
+    fn scatter<R: Rng, O: Object>(&self, _incident: &Ray, normal: &Ray, rng: &mut R, _obj: &O) -> Option<ScatterRay> {
         // Random diffuse method
         let direction = Vec3::random_on_normal(rng, normal.direction());
 
