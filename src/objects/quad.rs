@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use rand::rngs::SmallRng;
 
-use crate::{aabb::Aabb, interval::Interval, materials::{Material, ScatterRay}, objects::{AxisComparable, Bbox, Hit, Intersectable, Object, Scatter}, ray::Ray, vec3::{Point3, Vec3}};
+use crate::{aabb::Aabb, color::Color, interval::Interval, materials::{Material, ScatterRay}, objects::{AxisComparable, Bbox, Emmisive, Hit, Intersectable, Object, Scatter}, ray::Ray, vec3::{Point3, Vec3}};
 
 impl<M: Material + Send + Sync> Object for Quad<M> {}
 
@@ -83,5 +83,12 @@ impl<M: Material> AxisComparable for Quad<M> {
     #[inline]
     fn axis_median(&self, axis: usize) -> f64 {
         self.bbox.get_axis(axis).median()
+    }
+}
+
+impl<M: Material> Emmisive for Quad<M> {
+    #[inline]
+    fn emit(&self, hit: &Hit) -> Color {
+        self.material.emit(hit)
     }
 }

@@ -3,8 +3,9 @@ use std::sync::Arc;
 
 use rand::rngs::SmallRng;
 
-use super::{Intersectable, Scatter, Object};
+use super::{Intersectable, Scatter, Object, Emmisive};
 use crate::aabb::Aabb;
+use crate::color::Color;
 use crate::interval::Interval;
 use crate::objects::{AxisComparable, Bbox, Hit};
 use crate::ray::Ray;
@@ -111,5 +112,12 @@ impl<M: Material> AxisComparable for Sphere<M> {
     #[inline]
     fn axis_median(&self, axis: usize) -> f64 {
         self.bounding_box().get_axis(axis).median()
+    }
+}
+
+impl<M: Material> Emmisive for Sphere<M> {
+    #[inline]
+    fn emit(&self, hit: &Hit) -> Color {
+        self.material.emit(hit)
     }
 }

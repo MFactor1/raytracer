@@ -42,6 +42,8 @@ pub struct Camera {
     defocus_disk_u: Vec3<f64>,
     // Defocus disk vertical radius
     defocus_disk_v: Vec3<f64>,
+    // Scene background color
+    background: Color,
 }
 
 impl Camera {
@@ -56,6 +58,7 @@ impl Camera {
         vfov: f64,
         defocus_angle: f64,
         focus_dist: f64,
+        background: Color,
     ) -> Self {
         let look_vec = camera_center - look_at;
         let w = look_vec.unit();
@@ -92,6 +95,7 @@ impl Camera {
             defocus_angle,
             defocus_disk_u,
             defocus_disk_v,
+            background,
         }
     }
 
@@ -227,15 +231,14 @@ impl Camera {
         }
 
         if let Some((hit, obj)) = world.find_hit(&ray, &Interval::new(0.001, f64::INFINITY)) {
+            let emitted = obj.emit(&hit);
             if let Some(scatter_ray) = obj.scatter(&ray, &hit, rng) {
-                return self.ray_color(scatter_ray.ray, world, depth + 1, rng) * scatter_ray.attenuation;
+                return self.ray_color(scatter_ray.ray, world, depth + 1, rng) * scatter_ray.attenuation + emitted;
             } else {
-                return Color::new(0.0, 0.0, 0.0);
+                return emitted;
             }
         }
 
-        let y = ray.direction().unit().y();
-        let scale = 0.5 * (y as f64 + 1.0);
-        Color::new(1.0, 1.0, 1.0) * (1.0 - scale) + Color::new(0.5, 0.7, 1.0) * scale
+        self.background
     }
 }

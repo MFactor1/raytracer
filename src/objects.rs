@@ -4,6 +4,7 @@ pub mod quad;
 use rand::rngs::SmallRng;
 
 use crate::aabb::Aabb;
+use crate::color::Color;
 use crate::vec3::Vec3;
 
 use super::interval::Interval;
@@ -23,7 +24,7 @@ impl Hit {
     }
 }
 
-pub trait Object: Intersectable + AxisComparable + Scatter + Bbox + Send + Sync {}
+pub trait Object: Intersectable + AxisComparable + Scatter + Bbox + Emmisive + Send + Sync {}
 
 pub trait Intersectable {
     /// Gets the t value of the first intersection point, if there exists one.
@@ -44,6 +45,10 @@ pub trait Scatter {
 
 pub trait Bbox {
     fn bounding_box(&self) -> &Aabb;
+}
+
+pub trait Emmisive {
+    fn emit(&self, hit: &Hit) -> Color;
 }
 
 pub struct ObjectSet {
