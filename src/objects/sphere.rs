@@ -72,7 +72,7 @@ impl<M: Material> Intersectable for Sphere<M> {
         } else {
             let t_2 = (h + descriminant.sqrt()) / a;
             if interval.contains(&t_2) {
-                t = Some(t_1);
+                t = Some(t_2);
             }
         }
 
