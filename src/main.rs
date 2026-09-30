@@ -200,7 +200,7 @@ fn simple_light() {
     let perlin_tex = Arc::new(Noise::new(4.));
     let perlin_mat = Arc::new(Lambertian::new(perlin_tex.clone()));
     world.push(Sphere::new(Point3::new(0., -1000., 0.), 1000., perlin_mat.clone()));
-    world.push(Sphere::new(Point3::new(-3., 2., 0.), 2., perlin_mat.clone()));
+    world.push(Sphere::new(Point3::new(-5., 2., 0.), 2., perlin_mat.clone()));
 
     let light_red = Arc::new(Emmisive::from_color(Color::new(2., 0.5, 0.5)));
     let light_white_low = Arc::new(Emmisive::from_color(Color::new(1.5, 1.14, 0.795)));
@@ -244,15 +244,16 @@ fn simple_light() {
     let mut camera = Camera::new(
     3440,
         21.0 / 9.0,
-        Point3::new(26., 5., 6.),
+        Point3::new(25., 5., 6.),
         Point3::new(0., 1.5, -1.),
         Vec3::new(0., 1., 0.),
         50000,
         50,
         16.0,
-        0.,
-        10.,
+        0.5,
+        23.,
         Color::new(0.005, 0.005, 0.03),
+        //Color::new(0.7, 0.8, 1.),
     );
 
     camera.render(bounded_world, "output.ppm").unwrap();
