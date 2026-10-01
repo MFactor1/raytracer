@@ -1,15 +1,15 @@
-use crate::{aabb::Aabb, interval::Interval, objects::{Bbox, Hit, IntersectableContainer, Object, ObjectSet}, ray::Ray};
+use crate::{aabb::Aabb, interval::Interval, objects::{Bbox, Hit, Intersectable, Object, ObjectSet}, ray::Ray};
 
 
 pub struct BvhNode {
     left: Option<Box<BvhNode>>,
     right: Option<Box<BvhNode>>,
-    obj: Option<Box<dyn Object>>,
+    obj: Option<Box<dyn Intersectable>>,
     bbox: Aabb,
 }
 
 impl BvhNode {
-    pub fn new(mut objs: Vec<Box<dyn Object>>) -> Self {
+    pub fn new(mut objs: Vec<Box<dyn Intersectable>>) -> Self {
         assert!(objs.len() > 0);
 
         if objs.len() == 1 {
@@ -47,7 +47,7 @@ impl BvhNode {
             left: Some(Box::new(left)),
             right: Some(Box::new(right)),
             obj: None,
-            bbox: bbox,
+            bbox,
         }
     }
 
@@ -56,22 +56,22 @@ impl BvhNode {
     }
 }
 
-impl IntersectableContainer for BvhNode {
-    fn find_hit(&self, ray: &Ray, interval: &Interval) -> Option<(Hit, &Box<dyn Object>)> {
+impl Intersectable for BvhNode {
+    fn intersects(&self, ray: &Ray, interval: &Interval) -> Option<(Hit, &dyn Object)> {
         if !self.bbox.hit(ray, interval) {
             return None
         }
 
         if let Some(obj) = &self.obj {
             if let Some(hit) = obj.intersects(ray, interval) {
-                return Some((hit, obj))
+                return Some(hit)
             }
         }
 
         let mut hit_result = None;
 
         if let Some(left) = &self.left {
-            if let Some(hit) = left.find_hit(ray, interval) {
+            if let Some(hit) = left.intersects(ray, interval) {
                 hit_result = Some(hit);
             }
         }
@@ -84,7 +84,7 @@ impl IntersectableContainer for BvhNode {
         };
 
         if let Some(right) = &self.right {
-            if let Some(hit) = right.find_hit(ray, check_interval_right) {
+            if let Some(hit) = right.intersects(ray, check_interval_right) {
                 hit_result = Some(hit);
             }
         }

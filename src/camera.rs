@@ -14,7 +14,7 @@ use crate::bvh::{BvhNode};
 
 use super::color::Color;
 use super::interval::Interval;
-use super::objects::{IntersectableContainer as _};
+use super::objects::{Intersectable as _};
 use super::ray::Ray;
 use super::vec3::{Point3, Vec3};
 
@@ -230,7 +230,7 @@ impl Camera {
             return Color::new(0.0, 0.0, 0.0);
         }
 
-        if let Some((hit, obj)) = world.find_hit(&ray, &Interval::new(0.001, f64::INFINITY)) {
+        if let Some((hit, obj)) = world.intersects(&ray, &Interval::new(0.001, f64::INFINITY)) {
             let emitted = obj.emit(&hit);
             if let Some(scatter_ray) = obj.scatter(&ray, &hit, rng) {
                 return self.ray_color(scatter_ray.ray, world, depth + 1, rng) * scatter_ray.attenuation + emitted;

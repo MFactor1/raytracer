@@ -1,16 +1,13 @@
 use std::f64::consts::PI;
 use std::sync::Arc;
 
-use rand::rngs::SmallRng;
-
-use super::{Intersectable, Scatter, Object, Emmisive};
+use super::{Intersectable, Object};
 use crate::aabb::Aabb;
-use crate::color::Color;
 use crate::interval::Interval;
-use crate::objects::{AxisComparable, Bbox, Hit};
+use crate::objects::{Bbox, Hit, HasMaterial};
 use crate::ray::Ray;
 use crate::vec3::{Point3, Vec3};
-use crate::materials::{Material, ScatterRay};
+use crate::materials::{Material};
 
 impl<M: Material + Send + Sync> Object for Sphere<M> {}
 
@@ -51,7 +48,7 @@ impl<M: Material> Sphere<M> {
 }
 
 impl<M: Material> Intersectable for Sphere<M> {
-    fn intersects(&self, ray: &Ray, interval: &Interval) -> Option<Hit> {
+    fn intersects(&self, ray: &Ray, interval: &Interval) -> Option<(Hit, &dyn Object)> {
         let o_to_c = self.center - ray.origin();
         let a = ray.direction().length_squared();
         // b = -2h: allows for a simplification
@@ -80,24 +77,18 @@ impl<M: Material> Intersectable for Sphere<M> {
         if let Some(t) = t {
             let intersection = ray.at(t);
             let (u, v) = self.get_uv(intersection);
-            return Some(
+            return Some((
                 Hit::new(
                     self.normal(intersection),
                     t,
                     u,
                     v,
-                )
-            )
+                ),
+                self
+            ))
         }
 
         None
-    }
-}
-
-impl<M: Material> Scatter for Sphere<M> {
-    #[inline]
-    fn scatter(&self, incident: &Ray, hit: &Hit, rng: &mut SmallRng) -> Option<ScatterRay> {
-        self.material.scatter(incident, hit, rng)
     }
 }
 
@@ -108,16 +99,11 @@ impl<M: Material> Bbox for Sphere<M> {
     }
 }
 
-impl<M: Material> AxisComparable for Sphere<M> {
-    #[inline]
-    fn axis_median(&self, axis: usize) -> f64 {
-        self.bounding_box().get_axis(axis).median()
-    }
-}
+impl<M: Material> HasMaterial for Sphere<M> {
+    type Mat = M;
 
-impl<M: Material> Emmisive for Sphere<M> {
     #[inline]
-    fn emit(&self, hit: &Hit) -> Color {
-        self.material.emit(hit)
+    fn get_material(&self) -> &M {
+        &self.material
     }
 }

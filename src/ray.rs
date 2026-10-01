@@ -18,8 +18,18 @@ impl Ray {
     }
 
     #[inline]
+    pub fn origin_mut(&mut self) -> &mut Vec3<f64> {
+        &mut self.orig
+    }
+
+    #[inline]
     pub fn direction(&self) -> Point3<f64> {
         self.dir
+    }
+
+    #[inline]
+    pub fn direction_mut(&mut self) -> &mut Vec3<f64> {
+        &mut self.dir
     }
 
     #[inline]

@@ -1,3 +1,5 @@
+use core::ops;
+
 #[derive(Copy, Clone)]
 pub struct Interval {
     pub min: f64,
@@ -70,5 +72,22 @@ impl Interval {
 impl Default for Interval {
     fn default() -> Self {
         Self { min: 0., max: 0. }
+    }
+}
+
+impl ops::AddAssign<f64> for Interval {
+    #[inline]
+    fn add_assign(&mut self, val: f64) {
+        self.min += val;
+        self.max += val;
+    }
+}
+
+impl ops::Add<f64> for Interval {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, val: f64) -> Self::Output {
+        Interval::new(self.min + val, self.max + val)
     }
 }

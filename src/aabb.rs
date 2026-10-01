@@ -1,6 +1,7 @@
 //! AABB (Axis Aligned Bounding Box)
 
-use crate::{ray::Ray, vec3::Point3};
+use core::ops;
+use crate::{ray::Ray, vec3::{Point3, Vec3}};
 
 use super::interval::Interval;
 
@@ -91,10 +92,50 @@ impl Aabb {
         }
     }
 
+    pub fn x(&self) -> &Interval {
+        &self.x
+    }
+
+    pub fn y(&self) -> &Interval {
+        &self.y
+    }
+
+    pub fn z(&self) -> &Interval {
+        &self.z
+    }
+
     fn pad_to_min(&mut self) {
         let min_delta = 0.0001;
         if self.x.len() < min_delta { self.x = self.x.expand(min_delta) }
         if self.y.len() < min_delta { self.y = self.y.expand(min_delta) }
         if self.z.len() < min_delta { self.z = self.z.expand(min_delta) }
+    }
+}
+
+impl Default for Aabb {
+    fn default() -> Self {
+        Self {
+            x: Interval::default(),
+            y: Interval::default(),
+            z: Interval::default(),
+        }
+    }
+}
+
+impl ops::AddAssign<Vec3<f64>> for Aabb {
+    #[inline]
+    fn add_assign(&mut self, val: Vec3<f64>) {
+        self.x += val.x();
+        self.y += val.y();
+        self.z += val.z();
+    }
+}
+
+impl ops::Add<Vec3<f64>> for &Aabb {
+    type Output = Aabb;
+
+    #[inline]
+    fn add(self, val: Vec3<f64>) -> Self::Output {
+        Aabb::new(self.x + val.x(), self.y + val.y(), self.z + val.z())
     }
 }

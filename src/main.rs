@@ -7,9 +7,11 @@ use pathtracer_lib::materials::dielectric::Dielectric;
 use pathtracer_lib::materials::emmisive::Emmisive;
 use pathtracer_lib::materials::metal::Metal;
 use pathtracer_lib::objects::ObjectSet;
-use pathtracer_lib::objects::quad::Quad;
+use pathtracer_lib::objects::quad::{Quad, make_box};
+use pathtracer_lib::objects::rotate::RotateY;
 use pathtracer_lib::objects::sphere::Sphere;
 use pathtracer_lib::materials::lambertian::Lambertian;
+use pathtracer_lib::objects::translate::Translate;
 use pathtracer_lib::texture::Checkered;
 use pathtracer_lib::texture::Image;
 use pathtracer_lib::texture::Noise;
@@ -259,14 +261,55 @@ fn simple_light() {
     camera.render(bounded_world, "output.ppm").unwrap();
 }
 
+fn cornell_box() {
+    colog::init();
+    let mut world = ObjectSet::new();
+
+    let red = Arc::new(Lambertian::from_color(Color::new(0.65, 0.05, 0.05)));
+    let white = Arc::new(Lambertian::from_color(Color::new(0.73, 0.73, 0.73)));
+    let green = Arc::new(Lambertian::from_color(Color::new(0.12, 0.45, 0.15)));
+    let light = Arc::new(Emmisive::from_color(Color::new(15., 15., 15.)));
+
+    world.push(Quad::new(Point3::new(555., 0., 0.), Vec3::new(0., 555., 0.), Vec3::new(0., 0., 555.), green.clone()));
+    world.push(Quad::new(Point3::new(0., 0., 0.), Vec3::new(0., 555., 0.), Vec3::new(0., 0., 555.), red.clone()));
+    world.push(Quad::new(Point3::new(343., 554., 332.), Vec3::new(-130., 0., 0.), Vec3::new(0., 0., -105.), light.clone()));
+    world.push(Quad::new(Point3::new(0., 0., 0.), Vec3::new(555., 0., 0.), Vec3::new(0., 0., 555.), white.clone()));
+    world.push(Quad::new(Point3::new(555., 555., 555.), Vec3::new(-555., 0., 0.), Vec3::new(0., 0., -555.), white.clone()));
+    world.push(Quad::new(Point3::new(0., 0., 555.), Vec3::new(555., 0., 0.), Vec3::new(0., 555., 0.), white.clone()));
+
+    let box_rear = make_box(Point3::new(0., 0., 0.), Point3::new(165., 330., 165.), white.clone());
+    let box_front = make_box(Point3::new(0., 0., 0.), Point3::new(165., 165., 165.), white.clone());
+    world.push(Translate::new(RotateY::new(box_rear, 15.), Vec3::new(265., 0., 295.)));
+    world.push(Translate::new(RotateY::new(box_front, -18.), Vec3::new(130., 0., 65.)));
+
+    let bounded_world = BvhNode::from_objset(world);
+
+    let mut camera = Camera::new(
+    500,
+        1.,
+        Point3::new(278., 278., -800.),
+        Point3::new(278., 278., 0.),
+        Vec3::new(0., 1., 0.),
+        200,
+        50,
+        40.0,
+        0.0,
+        23.,
+        Color::new(0., 0., 0.),
+    );
+
+    camera.render(bounded_world, "output.ppm").unwrap();
+}
+
 fn main() {
-    match 6 {
+    match 7 {
         1 => book_1_demo(),
         2 => checkered_spheres(),
         3 => earth(),
         4 => perlin_spheres(),
         5 => quads(),
         6 => simple_light(),
+        7 => cornell_box(),
         _ => panic!("Not an option"),
     }
 }
