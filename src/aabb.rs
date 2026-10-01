@@ -20,7 +20,7 @@ impl Aabb {
     }
 
     // Creates Aabb from the two extreme-most corner points
-    pub fn from_extrema(a: Point3<f64>, b: Point3<f64>) -> Self {
+    pub fn from_extrema(a: Point3<f32>, b: Point3<f32>) -> Self {
         let x = if a.x() <= b.x() {
             Interval::new(a.x(), b.x())
         } else {
@@ -105,7 +105,7 @@ impl Aabb {
     }
 
     fn pad_to_min(&mut self) {
-        let min_delta = 0.0001;
+        let min_delta = 0.01;
         if self.x.len() < min_delta { self.x = self.x.expand(min_delta) }
         if self.y.len() < min_delta { self.y = self.y.expand(min_delta) }
         if self.z.len() < min_delta { self.z = self.z.expand(min_delta) }
@@ -122,20 +122,20 @@ impl Default for Aabb {
     }
 }
 
-impl ops::AddAssign<Vec3<f64>> for Aabb {
+impl ops::AddAssign<Vec3<f32>> for Aabb {
     #[inline]
-    fn add_assign(&mut self, val: Vec3<f64>) {
+    fn add_assign(&mut self, val: Vec3<f32>) {
         self.x += val.x();
         self.y += val.y();
         self.z += val.z();
     }
 }
 
-impl ops::Add<Vec3<f64>> for &Aabb {
+impl ops::Add<Vec3<f32>> for &Aabb {
     type Output = Aabb;
 
     #[inline]
-    fn add(self, val: Vec3<f64>) -> Self::Output {
+    fn add(self, val: Vec3<f32>) -> Self::Output {
         Aabb::new(self.x + val.x(), self.y + val.y(), self.z + val.z())
     }
 }

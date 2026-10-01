@@ -5,18 +5,18 @@ use crate::{aabb::Aabb, interval::Interval, materials::{Material}, objects::{Bbo
 impl<M: Material + Send + Sync> Object for Quad<M> {}
 
 pub struct Quad<M: Material> {
-    origin: Point3<f64>,
-    u: Vec3<f64>,
-    v: Vec3<f64>,
-    w: Vec3<f64>,
-    normal: Vec3<f64>,
-    d: f64,
+    origin: Point3<f32>,
+    u: Vec3<f32>,
+    v: Vec3<f32>,
+    w: Vec3<f32>,
+    normal: Vec3<f32>,
+    d: f32,
     material: Arc<M>,
     bbox: Aabb,
 }
 
 impl<M: Material> Quad<M> {
-    pub fn new(origin: Point3<f64>, u: Vec3<f64>, v: Vec3<f64>, material: Arc<M>) -> Self {
+    pub fn new(origin: Point3<f32>, u: Vec3<f32>, v: Vec3<f32>, material: Arc<M>) -> Self {
         let bbox_diag1 = Aabb::from_extrema(origin, origin + u + v);
         let bbox_diag2 = Aabb::from_extrema(origin + u, origin + v);
         let bbox = Aabb::enclose(&bbox_diag1, &bbox_diag2);
@@ -29,7 +29,7 @@ impl<M: Material> Quad<M> {
     }
 
     #[inline]
-    fn normal(&self, incident: &Ray, point: Point3<f64>) -> Ray {
+    fn normal(&self, incident: &Ray, point: Point3<f32>) -> Ray {
         Ray::new(point, super::orient_normal(incident, self.normal))
     }
 }
@@ -39,7 +39,7 @@ impl<M: Material> Intersectable for Quad<M> {
         let denominator = self.normal.dot(ray.direction());
 
         // If the ray is parallel to the plane
-        if denominator.abs() < 1e-8 {
+        if denominator.abs() < 1e-4 {
             return None;
         }
 
@@ -53,7 +53,7 @@ impl<M: Material> Intersectable for Quad<M> {
         let alpha = self.w.dot(planar_hit_vector.cross(self.v));
         let beta = self.w.dot(self.u.cross(planar_hit_vector));
 
-        if !(0_f64..=1_f64).contains(&alpha) || !(0_f64..=1_f64).contains(&beta) {
+        if !(0_f32..=1_f32).contains(&alpha) || !(0_f32..=1_f32).contains(&beta) {
             return None
         }
 
@@ -79,7 +79,7 @@ impl<M: Material> HasMaterial for Quad<M> {
     }
 }
 
-pub fn make_box<M: Material + 'static>(a: Point3<f64>, b: Point3<f64>, material: Arc<M>) -> ObjectSet {
+pub fn make_box<M: Material + 'static>(a: Point3<f32>, b: Point3<f32>, material: Arc<M>) -> ObjectSet {
     make_box_colored(
         a,
         b,
@@ -112,8 +112,8 @@ where
 }
 
 pub fn make_box_colored<MLF, MRT, MTP, MBM, MFR, MRR>(
-    a: Point3<f64>,
-    b: Point3<f64>,
+    a: Point3<f32>,
+    b: Point3<f32>,
     colors: BoxColors<MLF, MRT, MTP, MBM, MFR, MRR>
 ) -> ObjectSet
 where

@@ -3,7 +3,7 @@ use rand::{distr::{Uniform}, seq::SliceRandom};
 use crate::vec3::{Point3, Vec3};
 
 pub struct Perlin {
-    randvec: [Vec3<f64>; Perlin::POINT_COUNT],
+    randvec: [Vec3<f32>; Perlin::POINT_COUNT],
     perm_x: [usize; Perlin::POINT_COUNT],
     perm_y: [usize; Perlin::POINT_COUNT],
     perm_z: [usize; Perlin::POINT_COUNT],
@@ -15,7 +15,7 @@ impl Perlin {
     pub fn new() -> Self {
         let mut rng = rand::rng();
         let dist = Uniform::new(-1.0, 1.0).unwrap();
-        let randvec: [Vec3<f64>; Perlin::POINT_COUNT] = std::array::from_fn(|_| Vec3::random(&mut rng, dist).to_unit());
+        let randvec: [Vec3<f32>; Perlin::POINT_COUNT] = std::array::from_fn(|_| Vec3::random(&mut rng, dist).to_unit());
 
         Self {
             randvec,
@@ -25,14 +25,14 @@ impl Perlin {
         }
     }
 
-    pub fn noise(&self, point: &Point3<f64>) -> f64 {
+    pub fn noise(&self, point: &Point3<f32>) -> f32 {
         let u = point.x() - point.x().floor();
         let v = point.y() - point.y().floor();
         let w = point.z() - point.z().floor();
         let i = point.x().floor() as i64;
         let j = point.y().floor() as i64;
         let k = point.z().floor() as i64;
-        let mut c: [[[Vec3<f64>; 2]; 2]; 2] = [[[Vec3::new(0., 0., 0.); 2]; 2]; 2];
+        let mut c: [[[Vec3<f32>; 2]; 2]; 2] = [[[Vec3::new(0., 0., 0.); 2]; 2]; 2];
 
         for di in 0_i64..2_i64 {
             for dj in 0_i64..2_i64 {
@@ -49,7 +49,7 @@ impl Perlin {
         Self::perlin_interp(c, u, v, w)
     }
 
-    pub fn terbulence(&self, point: &Point3<f64>, depth: usize) -> f64 {
+    pub fn terbulence(&self, point: &Point3<f32>, depth: usize) -> f32 {
         let mut accum = 0.;
         let mut temp_point = point.clone();
         let mut weight = 1.;
@@ -70,7 +70,7 @@ impl Perlin {
         out
     }
 
-    fn perlin_interp(c: [[[Vec3<f64>; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
+    fn perlin_interp(c: [[[Vec3<f32>; 2]; 2]; 2], u: f32, v: f32, w: f32) -> f32 {
         let uu = u * u * (3. - 2. * u);
         let vv = v * v * (3. - 2. * v);
         let ww = w * w * (3. - 2. * w);
@@ -79,10 +79,10 @@ impl Perlin {
         for i in 0..2 {
             for j in 0..2 {
                 for k in 0..2 {
-                    let weight_v = Vec3::new(u - i as f64, v - j as f64, w - k as f64);
-                    accum += (i as f64 * uu + (1 - i) as f64 * (1. - uu))
-                        * (j as f64 * vv + (1 - j) as f64 * (1. - vv))
-                        * (k as f64 * ww + (1 - k) as f64 * (1. - ww))
+                    let weight_v = Vec3::new(u - i as f32, v - j as f32, w - k as f32);
+                    accum += (i as f32 * uu + (1 - i) as f32 * (1. - uu))
+                        * (j as f32 * vv + (1 - j) as f32 * (1. - vv))
+                        * (k as f32 * ww + (1 - k) as f32 * (1. - ww))
                         * c[i][j][k].dot(weight_v);
                 }
             }

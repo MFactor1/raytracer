@@ -11,12 +11,12 @@ use super::ScatterRay;
 
 pub struct Dielectric {
     pub albedo: Color,
-    pub refr_idx: f64,
-    pub fuzz: f64,
+    pub refr_idx: f32,
+    pub fuzz: f32,
 }
 
 impl Dielectric {
-    pub fn new(albedo: Color, refr_idx: f64, fuzz: f64) -> Self {
+    pub fn new(albedo: Color, refr_idx: f32, fuzz: f32) -> Self {
         Self { albedo, refr_idx, fuzz}
     }
 }
@@ -30,7 +30,7 @@ impl Material for Dielectric {
         let cos_theta = (-incident.direction().unit()).dot(norm).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
-        let direction: Vec3<f64>;
+        let direction: Vec3<f32>;
         let rand_range = Uniform::new(0.0, 1.0).unwrap();
         let fuzz_vec = Vec3::random_unit_vector(rng) * self.fuzz;
 
@@ -45,7 +45,7 @@ impl Material for Dielectric {
 }
 
 // Schlick's approximation for reflectance
-fn reflectance(cosine: f64, eta_i: f64, eta_t: f64) -> f64 {
+fn reflectance(cosine: f32, eta_i: f32, eta_t: f32) -> f32 {
     let r0 = ((eta_i - eta_t) / (eta_i + eta_t)).powi(2);
     r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
 }

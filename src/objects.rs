@@ -17,13 +17,13 @@ use super::materials::ScatterRay;
 
 pub struct Hit {
     pub normal: Ray,
-    pub t: f64,
-    pub u: f64,
-    pub v: f64,
+    pub t: f32,
+    pub u: f32,
+    pub v: f32,
 }
 
 impl Hit {
-    pub fn new(normal: Ray, t: f64, u: f64, v: f64) -> Self {
+    pub fn new(normal: Ray, t: f32, u: f32, v: f32) -> Self {
         Self { normal, t, u, v }
     }
 }
@@ -37,11 +37,11 @@ pub trait Intersectable: Bbox + AxisComparable + Send + Sync {
 }
 
 pub trait AxisComparable {
-    fn axis_median(&self, axis: usize) -> f64;
+    fn axis_median(&self, axis: usize) -> f32;
 }
 
 impl<T: Bbox> AxisComparable for T {
-    fn axis_median(&self, axis: usize) -> f64 {
+    fn axis_median(&self, axis: usize) -> f32 {
         self.bounding_box().get_axis(axis).median()
     }
 }
@@ -131,7 +131,7 @@ impl Bbox for ObjectSet {
 }
 
 #[inline]
-pub fn orient_normal(incident: &Ray, normal: Vec3<f64>) -> Vec3<f64> {
+pub fn orient_normal(incident: &Ray, normal: Vec3<f32>) -> Vec3<f32> {
     let front_face = incident.direction().dot(normal) < 0.;
     if front_face { normal } else { -normal }
 }

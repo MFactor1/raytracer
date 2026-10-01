@@ -4,20 +4,20 @@ use crate::{aabb::Aabb, interval::Interval, objects::{Bbox, Hit, Intersectable, 
 
 pub struct RotateY<O: Intersectable> {
     inner: O,
-    cos_theta: f64,
-    sin_theta: f64,
+    cos_theta: f32,
+    sin_theta: f32,
     bbox: Aabb,
 }
 
 impl<O: Intersectable> RotateY<O> {
-    pub fn new(object: O, angle: f64) -> RotateY<O> {
+    pub fn new(object: O, angle: f32) -> RotateY<O> {
         let (sin_theta, cos_theta) = angle.to_radians().sin_cos();
         let bbox = object.bounding_box();
 
-        let mut min = Point3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY);
-        let mut max = Point3::new(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
+        let mut min = Point3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
+        let mut max = Point3::new(f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);
 
-        for (i, j, k) in iproduct!(0..2, 0..2, 0..2).map(|(a, b, c)| (a as f64, b as f64, c as f64)) {
+        for (i, j, k) in iproduct!(0..2, 0..2, 0..2).map(|(a, b, c)| (a as f32, b as f32, c as f32)) {
             let x = i * bbox.x().max + (1. - i) * bbox.x().min;
             let y = j * bbox.y().max + (1. - j) * bbox.y().min;
             let z = k * bbox.z().max + (1. - k) * bbox.z().min;

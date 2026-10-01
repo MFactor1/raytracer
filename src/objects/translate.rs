@@ -3,11 +3,11 @@ use crate::{aabb::Aabb, interval::Interval, objects::{Bbox, Hit, Intersectable, 
 pub struct Translate<O: Intersectable> {
     inner: O,
     bbox: Aabb,
-    offset: Vec3<f64>,
+    offset: Vec3<f32>,
 }
 
 impl<O: Intersectable> Translate<O> {
-    pub fn new(object: O, offset: Vec3<f64>) -> Translate<O> {
+    pub fn new(object: O, offset: Vec3<f32>) -> Translate<O> {
         Self {
             bbox: object.bounding_box() + offset,
             inner: object,

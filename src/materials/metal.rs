@@ -9,11 +9,11 @@ use super::ScatterRay;
 
 pub struct Metal {
     pub albedo: Color,
-    pub fuzz: f64
+    pub fuzz: f32
 }
 
 impl Metal {
-    pub fn new(albedo: Color, fuzz: f64) -> Self {
+    pub fn new(albedo: Color, fuzz: f32) -> Self {
         Self { albedo, fuzz: fuzz.clamp(0.0, 1.0) }
     }
 }

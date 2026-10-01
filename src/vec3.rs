@@ -76,11 +76,11 @@ impl<T: Float> ops::Sub<T> for Vec3<T> {
     }
 }
 
-impl ops::Sub<Vec3<f64>> for f64 {
-    type Output = Vec3<f64>;
+impl ops::Sub<Vec3<f32>> for f32 {
+    type Output = Vec3<f32>;
 
     #[inline]
-    fn sub(self, rhs: Vec3<f64>) -> Vec3<f64> {
+    fn sub(self, rhs: Vec3<f32>) -> Vec3<f32> {
         Vec3::new(self - rhs[0], self - rhs[1], self - rhs[2])
     }
 }
@@ -146,9 +146,9 @@ impl<T: Float> ToString for Vec3<T> {
     }
 }
 
-impl Vec3<f64> {
+impl Vec3<f32> {
     #[inline]
-    pub fn random<R: Rng>(rng: &mut R, dist: Uniform<f64>) -> Self {
+    pub fn random<R: Rng>(rng: &mut R, dist: Uniform<f32>) -> Self {
         Vec3([dist.sample(rng), dist.sample(rng), dist.sample(rng)])
     }
 
@@ -158,14 +158,14 @@ impl Vec3<f64> {
         loop {
             let vec = Self::random(rng, dist);
             let length_sq = vec.length_squared();
-            if 1e-160 < length_sq && length_sq <= 1.0 {
+            if 1e-19 < length_sq && length_sq <= 1.0 {
                 return vec / length_sq.sqrt();
             }
         }
     }
 
     #[inline]
-    pub fn random_on_normal<R: Rng>(rng: &mut R, norm: Vec3<f64>) -> Self {
+    pub fn random_on_normal<R: Rng>(rng: &mut R, norm: Vec3<f32>) -> Self {
         let vec = Self::random_unit_vector(rng);
 
         if vec.dot(norm) > 0.0 {
@@ -252,7 +252,7 @@ impl<T: Float> Vec3<T> {
 
     #[inline]
     pub fn near_zero(&self) -> bool {
-        let e = T::from(1e-8).unwrap();
+        let e = T::from(1e-4).unwrap();
         self[0].abs() < e && self[1].abs() < e && self[2].abs() < e
     }
 

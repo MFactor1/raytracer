@@ -1,4 +1,3 @@
-use core::f64;
 use std::sync::Arc;
 
 use pathtracer_lib::bvh::BvhNode;
@@ -36,7 +35,7 @@ fn book_1_demo() {
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat = dist.sample(&mut rng);
-            let center = Point3::new(a as f64 + 0.9*dist.sample(&mut rng), 0.2, b as f64 + 0.9*dist.sample(&mut rng));
+            let center = Point3::new(a as f32 + 0.9*dist.sample(&mut rng), 0.2, b as f32 + 0.9*dist.sample(&mut rng));
 
             if (center - Point3::new(4., 0.2, 0.)).length() > 0.9 {
                 if choose_mat < 0.8 {
@@ -313,7 +312,7 @@ fn cornell_box_full() {
     let gold = Arc::new(Metal::new(Color::new(0.83, 0.686, 0.2157), 5.));
 
     //let box_light = Quad::new(Point3::new(343., 554. + 20., 332.), Vec3::new(-130., 0., 0.), Vec3::new(0., 0., -105.), light.clone());
-    let box_light = Quad::new(Point3::new(554.99999, 75., 127.5), Vec3::new(0., 50., 0.), Vec3::new(0., 0., 300.), light.clone());
+    let box_light = Quad::new(Point3::new(554.99, 75., 127.5), Vec3::new(0., 50., 0.), Vec3::new(0., 0., 300.), light.clone());
     world.push(box_light);
 
     let back_light = make_box(Point3::new(227.5, 700., 1500.), Point3::new(327.5, 800., 1600.), light.clone());

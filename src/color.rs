@@ -1,7 +1,7 @@
 use super::vec3::Vec3;
 use std::io::{BufWriter, Write};
 
-pub type Color = Vec3<f64>;
+pub type Color = Vec3<f32>;
 
 impl Color {
     pub fn write_color<W: Write>(&self, out: &mut BufWriter<W>) -> Result<(), std::io::Error> {
@@ -13,7 +13,7 @@ impl Color {
 }
 
 #[inline]
-fn linear_to_gamma(linear: f64) -> f64 {
+fn linear_to_gamma(linear: f32) -> f32 {
     if linear > 0.0 {
         return linear.sqrt();
     }

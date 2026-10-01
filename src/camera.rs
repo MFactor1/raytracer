@@ -25,23 +25,23 @@ pub struct Camera {
     /// Num vertical pixels
     frame_height: usize,
     /// Horizonal offset between pixels
-    pix_delta_u: Vec3<f64>,
+    pix_delta_u: Vec3<f32>,
     /// Vertical offset between pixels
-    pix_delta_v: Vec3<f64>,
+    pix_delta_v: Vec3<f32>,
     /// Point of the top left pixel in the viewport
-    pix_00: Point3<f64>,
+    pix_00: Point3<f32>,
     /// Point of the center of the camera
-    camera_center: Point3<f64>,
+    camera_center: Point3<f32>,
     /// Number of samples to take per pixel
     pix_samples: usize,
     /// Maximum number of ray bounces into the scene
     max_ray_bounces: usize,
     /// Variation angle of rays through each pixel
-    defocus_angle: f64,
+    defocus_angle: f32,
     // Defocus disk horizontal radius
-    defocus_disk_u: Vec3<f64>,
+    defocus_disk_u: Vec3<f32>,
     // Defocus disk vertical radius
-    defocus_disk_v: Vec3<f64>,
+    defocus_disk_v: Vec3<f32>,
     // Scene background color
     background: Color,
 }
@@ -49,15 +49,15 @@ pub struct Camera {
 impl Camera {
     pub fn new(
         frame_width: usize,
-        aspect_ratio: f64,
-        camera_center: Point3<f64>,
-        look_at: Point3<f64>,
-        vup: Vec3<f64>,
+        aspect_ratio: f32,
+        camera_center: Point3<f32>,
+        look_at: Point3<f32>,
+        vup: Vec3<f32>,
         pix_samples: usize,
         max_ray_bounces: usize,
-        vfov: f64,
-        defocus_angle: f64,
-        focus_dist: f64,
+        vfov: f32,
+        defocus_angle: f32,
+        focus_dist: f32,
         background: Color,
     ) -> Self {
         let look_vec = camera_center - look_at;
@@ -65,17 +65,17 @@ impl Camera {
         let u = vup.cross(w).unit();
         let v = w.cross(u);
 
-        let frame_height = (frame_width as f64 / aspect_ratio) as usize;
+        let frame_height = (frame_width as f32 / aspect_ratio) as usize;
         let frame_height = if frame_width < 1 { 1 } else { frame_height };
         let view_height = (vfov.to_radians() / 2.0).tan();
         let vp_height = 2.0 * view_height * focus_dist;
-        let vp_width = (vp_height * (frame_width as f64 / frame_height as f64)).max(1.0);
+        let vp_width = (vp_height * (frame_width as f32 / frame_height as f32)).max(1.0);
 
         let vp_u = u * vp_width;
         let vp_v = -v * vp_height;
 
-        let pix_delta_u = vp_u / frame_width as f64;
-        let pix_delta_v = vp_v / frame_height as f64;
+        let pix_delta_u = vp_u / frame_width as f32;
+        let pix_delta_v = vp_v / frame_height as f32;
         let vp_upper_left = camera_center - (w * focus_dist) - vp_u / 2.0 - vp_v / 2.0;
         let pix_00 = vp_upper_left + (pix_delta_u + pix_delta_v) * 0.5;
 
@@ -179,7 +179,7 @@ impl Camera {
     fn process_line(self, world: &BvhNode, line: usize, rng: &mut SmallRng) -> Vec<Color> {
         let mut pixels = Vec::with_capacity(self.frame_width);
         for i in 0..self.frame_width {
-            let pix = self.pix_00 + self.pix_delta_u * i as f64 + self.pix_delta_v * line as f64;
+            let pix = self.pix_00 + self.pix_delta_u * i as f32 + self.pix_delta_v * line as f32;
             log::debug!("Pixel: {:?}", pix);
 
             let mut pix_color = Color::new(0.0, 0.0, 0.0);
@@ -187,7 +187,7 @@ impl Camera {
                 let ray = self.get_ray(i, line, rng);
                 pix_color += self.ray_color(ray, world, 0, rng);
             }
-            pix_color /= self.pix_samples as f64;
+            pix_color /= self.pix_samples as f32;
             pixels.push(pix_color);
         }
 
@@ -198,8 +198,8 @@ impl Camera {
     #[allow(dead_code)]
     fn get_static_ray(&self, x: usize, y: usize) -> Ray {
         let pixel_loc = self.pix_00
-            + self.pix_delta_u * x as f64
-            + self.pix_delta_v * y as f64;
+            + self.pix_delta_u * x as f32
+            + self.pix_delta_v * y as f32;
 
         Ray::new(self.camera_center, pixel_loc - self.camera_center)
     }
@@ -208,19 +208,19 @@ impl Camera {
     fn get_ray<R: Rng>(&self, x: usize, y: usize, rng: &mut R) -> Ray {
         let offset = self.sample_square(rng);
         let pixel_loc = self.pix_00
-            + self.pix_delta_u * (x as f64 + offset.x())
-            + self.pix_delta_v * (y as f64 + offset.y());
+            + self.pix_delta_u * (x as f32 + offset.x())
+            + self.pix_delta_v * (y as f32 + offset.y());
 
         let ray_origin = if self.defocus_angle <= 0. { self.camera_center } else { self.defocus_disk_sample(rng) };
         Ray::new(ray_origin, pixel_loc - ray_origin)
     }
 
-    fn sample_square<R: Rng>(&self, rng: &mut R) -> Vec3<f64> {
+    fn sample_square<R: Rng>(&self, rng: &mut R) -> Vec3<f32> {
         let dist = Uniform::new(0.0, 0.999).unwrap();
         Vec3::new(dist.sample(rng) - 0.5, dist.sample(rng) - 0.5, 0.0)
     }
 
-    fn defocus_disk_sample<R: Rng>(&self, rng: &mut R) -> Point3<f64> {
+    fn defocus_disk_sample<R: Rng>(&self, rng: &mut R) -> Point3<f32> {
         let p = Point3::random_on_unit_disk(rng);
         self.camera_center + (self.defocus_disk_u * p.x()) + (self.defocus_disk_v * p.y())
     }
@@ -230,7 +230,7 @@ impl Camera {
             return Color::new(0.0, 0.0, 0.0);
         }
 
-        if let Some((hit, obj)) = world.intersects(&ray, &Interval::new(0.001, f64::INFINITY)) {
+        if let Some((hit, obj)) = world.intersects(&ray, &Interval::new(0.01, f32::INFINITY)) {
             let emitted = obj.emit(&hit);
             if let Some(scatter_ray) = obj.scatter(&ray, &hit, rng) {
                 return self.ray_color(scatter_ray.ray, world, depth + 1, rng) * scatter_ray.attenuation + emitted;

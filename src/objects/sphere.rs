@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use std::sync::Arc;
 
 use super::{Intersectable, Object};
@@ -12,14 +12,14 @@ use crate::materials::{Material};
 impl<M: Material + Send + Sync> Object for Sphere<M> {}
 
 pub struct Sphere<M: Material> {
-    center: Point3<f64>,
-    radius: f64,
+    center: Point3<f32>,
+    radius: f32,
     material: Arc<M>,
     bbox: Aabb,
 }
 
 impl<M: Material> Sphere<M> {
-    pub fn new(center: Point3<f64>, radius: f64, material: Arc<M>) -> Self {
+    pub fn new(center: Point3<f32>, radius: f32, material: Arc<M>) -> Self {
         // The bbox is just constructed using the vector of size r, r, r,
         // and using center - v, center + v as the extrema. This guarentees
         // the sphere fits exactly in the bbox.
@@ -30,7 +30,7 @@ impl<M: Material> Sphere<M> {
     }
 
     #[inline]
-    fn normal(&self, point: Point3<f64>) -> Ray {
+    fn normal(&self, point: Point3<f32>) -> Ray {
         // We divide the direction by self.radius to normalize the direction vector, since normal
         // vectors must be unit vectors. Assuming the point lies on the sphere, dividing by the
         // radius is a cheap way to normalize, avoiding a square root.
@@ -38,7 +38,7 @@ impl<M: Material> Sphere<M> {
     }
 
     #[inline]
-    fn get_uv(&self, point: Point3<f64>) -> (f64, f64) {
+    fn get_uv(&self, point: Point3<f32>) -> (f32, f32) {
         let punit = point.to_unit();
         let theta = (-punit.y()).acos();
         let phi = (-punit.z()).atan2(punit.x()) + PI;
