@@ -7,7 +7,7 @@ use pathtracer_lib::materials::dielectric::Dielectric;
 use pathtracer_lib::materials::emmisive::Emmisive;
 use pathtracer_lib::materials::metal::Metal;
 use pathtracer_lib::objects::ObjectSet;
-use pathtracer_lib::objects::quad::{Quad, make_box};
+use pathtracer_lib::objects::quad::{BoxColors, Quad, make_box, make_box_colored};
 use pathtracer_lib::objects::rotate::RotateY;
 use pathtracer_lib::objects::sphere::Sphere;
 use pathtracer_lib::materials::lambertian::Lambertian;
@@ -301,8 +301,117 @@ fn cornell_box() {
     camera.render(bounded_world, "output.ppm").unwrap();
 }
 
+fn cornell_box_full() {
+    colog::init();
+    let mut world = ObjectSet::new();
+
+    let red = Arc::new(Lambertian::from_color(Color::new(0.8, 0.05, 0.05)));
+    let white = Arc::new(Lambertian::from_color(Color::new(0.73, 0.73, 0.73)));
+    let green = Arc::new(Lambertian::from_color(Color::new(0.12, 0.8, 0.15)));
+    let light = Arc::new(Emmisive::from_color(Color::new(15., 15., 15.)));
+    let glass = Arc::new(Dielectric::new(Color::new(0.9, 1., 0.95), 1.5, 0.));
+    let gold = Arc::new(Metal::new(Color::new(0.83, 0.686, 0.2157), 5.));
+
+    //let box_light = Quad::new(Point3::new(343., 554. + 20., 332.), Vec3::new(-130., 0., 0.), Vec3::new(0., 0., -105.), light.clone());
+    let box_light = Quad::new(Point3::new(554.99999, 75., 127.5), Vec3::new(0., 50., 0.), Vec3::new(0., 0., 300.), light.clone());
+    world.push(box_light);
+
+    let back_light = make_box(Point3::new(227.5, 700., 1500.), Point3::new(327.5, 800., 1600.), light.clone());
+    world.push(back_light);
+
+    let right_wall_colors = BoxColors {
+        mat_top: white.clone(),
+        mat_left: green.clone(),
+        mat_right: white.clone(),
+        mat_rear: white.clone(),
+        mat_bottom: white.clone(),
+        mat_front: white.clone(),
+    };
+    let box_right_wall = make_box_colored(Point3::new(0., 0., 0.), Point3::new(-20., 555. + 20. * 2., 555. + 20.), right_wall_colors);
+    world.push(box_right_wall);
+
+    let left_wall_colors = BoxColors {
+        mat_top: white.clone(),
+        mat_left: white.clone(),
+        mat_right: red.clone(),
+        mat_rear: white.clone(),
+        mat_bottom: white.clone(),
+        mat_front: white.clone(),
+    };
+    let box_left_wall = make_box_colored(Point3::new(555., 0., 0.,), Point3::new(555. + 20., 555. + 20. * 2., 555. + 20.), left_wall_colors);
+    world.push(box_left_wall);
+
+    let box_floor_colors = BoxColors {
+        mat_top: gold.clone(),
+        mat_left: white.clone(),
+        mat_right: white.clone(),
+        mat_rear: white.clone(),
+        mat_bottom: white.clone(),
+        mat_front: white.clone(),
+    };
+    let box_floor = make_box_colored(Point3::new(0., 0., 0.), Point3::new(555., 20., 555.), box_floor_colors);
+    world.push(box_floor);
+
+    let box_roof_colors = BoxColors {
+        mat_top: white.clone(),
+        mat_left: white.clone(),
+        mat_right: white.clone(),
+        mat_rear: white.clone(),
+        mat_bottom: gold.clone(),
+        mat_front: white.clone(),
+    };
+    let box_roof = make_box_colored(Point3::new(0., 555. + 20., 0.), Point3::new(555., 555. + 20. * 2., 555.), box_roof_colors);
+    world.push(box_roof);
+
+    let box_rear_colors = BoxColors {
+        mat_top: white.clone(),
+        mat_left: white.clone(),
+        mat_right: white.clone(),
+        mat_rear: white.clone(),
+        mat_bottom: white.clone(),
+        mat_front: gold.clone(),
+    };
+    let box_rear = make_box_colored(Point3::new(0., 0., 555.), Point3::new(555., 555. + 20. * 2., 555. + 20.), box_rear_colors);
+    world.push(box_rear);
+
+    let glass_front = make_box(Point3::new(0., 20., 10.), Point3::new(100., 555. + 20., 20.), glass.clone());
+    world.push(glass_front);
+    let glass_bot = make_box(Point3::new(555., 20., 10.), Point3::new(100., 100. + 20., 20.), glass.clone());
+    world.push(glass_bot);
+
+    let box_rear = make_box(Point3::new(0., 20., 0.), Point3::new(165., 330. + 20., 165.), white.clone());
+    let box_front = make_box(Point3::new(0., 20., 0.), Point3::new(165., 165. + 20., 165.), white.clone());
+    world.push(Translate::new(RotateY::new(box_rear, 15.), Vec3::new(265., 0., 295.)));
+    world.push(Translate::new(RotateY::new(box_front, -18.), Vec3::new(130., 0., 65.)));
+
+    let world_floor = Quad::new(Point3::new(-5000., -20., -1000.), Vec3::new(10000., 0., 0.), Vec3::new(0., 0., 10000.), white.clone());
+    world.push(world_floor);
+    let world_backdrop = Quad::new(Point3::new(-5000., -20., 3000.), Vec3::new(10000., 0., 0.), Vec3::new(0., 3000., 0.), white.clone());
+    world.push(world_backdrop);
+
+    let bounded_world = BvhNode::from_objset(world);
+
+    let mut camera = Camera::new(
+    1000,
+        1.,
+        Point3::new(278., 278., -800.),
+        //Point3::new(380., 350., -800.),
+        Point3::new(278., 278., 0.),
+        Vec3::new(0., 1., 0.),
+        500,
+        50,
+        50.0,
+        0.0,
+        23.,
+        Color::new(0., 0., 0.),
+        //Color::new(0.7, 0.8, 1.),
+    );
+
+    camera.render(bounded_world, "output.ppm").unwrap();
+}
+
 fn main() {
-    match 7 {
+    match 8 {
         1 => book_1_demo(),
         2 => checkered_spheres(),
         3 => earth(),
@@ -310,6 +419,7 @@ fn main() {
         5 => quads(),
         6 => simple_light(),
         7 => cornell_box(),
+        8 => cornell_box_full(),
         _ => panic!("Not an option"),
     }
 }

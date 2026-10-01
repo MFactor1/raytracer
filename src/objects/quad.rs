@@ -80,6 +80,50 @@ impl<M: Material> HasMaterial for Quad<M> {
 }
 
 pub fn make_box<M: Material + 'static>(a: Point3<f64>, b: Point3<f64>, material: Arc<M>) -> ObjectSet {
+    make_box_colored(
+        a,
+        b,
+        BoxColors {
+            mat_left: material.clone(),
+            mat_right: material.clone(),
+            mat_top: material.clone(),
+            mat_bottom: material.clone(),
+            mat_front: material.clone(),
+            mat_rear: material.clone(),
+        },
+    )
+}
+
+pub struct BoxColors<MLF, MRT, MTP, MBM, MFR, MRR>
+where
+    MLF: Material + 'static,
+    MRT: Material + 'static,
+    MTP: Material + 'static,
+    MBM: Material + 'static,
+    MFR: Material + 'static,
+    MRR: Material + 'static,
+{
+    pub mat_left: Arc<MLF>,
+    pub mat_right: Arc<MRT>,
+    pub mat_top: Arc<MTP>,
+    pub mat_bottom: Arc<MBM>,
+    pub mat_front: Arc<MFR>,
+    pub mat_rear: Arc<MRR>,
+}
+
+pub fn make_box_colored<MLF, MRT, MTP, MBM, MFR, MRR>(
+    a: Point3<f64>,
+    b: Point3<f64>,
+    colors: BoxColors<MLF, MRT, MTP, MBM, MFR, MRR>
+) -> ObjectSet
+where
+    MLF: Material + 'static,
+    MRT: Material + 'static,
+    MTP: Material + 'static,
+    MBM: Material + 'static,
+    MFR: Material + 'static,
+    MRR: Material + 'static,
+{
     let mut sides = ObjectSet::new();
 
     let min = Point3::new(a.x().min(b.x()), a.y().min(b.y()), a.z().min(b.z()));
@@ -88,11 +132,11 @@ pub fn make_box<M: Material + 'static>(a: Point3<f64>, b: Point3<f64>, material:
     let dy = Vec3::new(0., max.y() - min.y(), 0.);
     let dz = Vec3::new(0., 0., max.z() - min.z());
 
-    sides.push(Quad::new(min, dx, dy, material.clone())); // front
-    sides.push(Quad::new(min, dz, dy, material.clone())); // right
-    sides.push(Quad::new(min, dx, dz, material.clone())); // bottom
-    sides.push(Quad::new(max, -dx, -dy, material.clone())); // back
-    sides.push(Quad::new(max, -dz, -dy, material.clone())); // left
-    sides.push(Quad::new(max, -dx, -dz, material.clone())); // top
+    sides.push(Quad::new(min, dx, dy, colors.mat_front)); // front
+    sides.push(Quad::new(min, dz, dy, colors.mat_right)); // right
+    sides.push(Quad::new(min, dx, dz, colors.mat_bottom)); // bottom
+    sides.push(Quad::new(max, -dx, -dy, colors.mat_rear)); // back
+    sides.push(Quad::new(max, -dz, -dy, colors.mat_left)); // left
+    sides.push(Quad::new(max, -dx, -dz, colors.mat_top)); // top
     sides
 }
