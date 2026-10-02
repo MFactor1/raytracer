@@ -13,6 +13,12 @@ rand_distr = "0.6"
 image = "0.25"
 itertools = "0.15"
 
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+
 [lib]
 name = "pathtracer_lib"
 path = "src/lib.rs"

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Instant;
 
 use pathtracer_lib::bvh::BvhNode;
 use pathtracer_lib::camera::Camera;
@@ -421,11 +422,15 @@ fn cornell_box_full() {
     world.push(glass_top);
 
     let box_rear = make_box(Point3::new(0., 20., 0.), Point3::new(165., 330. + 20., 165.), white.clone());
+    let ball_rear = Sphere::new(Vec3::new(82.5, 330. + 20. + 100., 82.5), 82.5, glass_entry.clone());
     let box_front = make_box(Point3::new(0., 20., 0.), Point3::new(165., 165. + 20., 165.), white.clone());
+    let ball_front = Sphere::new(Vec3::new(82.5, 165. + 20. + 100., 82.5), 82.5, glass_entry.clone());
     //world.push(Translate::new(RotateY::new(box_rear, 15.), Vec3::new(265., 0., 295.)));
     //world.push(Translate::new(RotateY::new(box_front, -18.), Vec3::new( 130., 0., 65.)));
     world.push(Translate::new(RotateY::new(box_rear, 15.), Vec3::new(box_size / 2. - 12., 0., box_size / 2. + 17.5)));
+    world.push(Translate::new(RotateY::new(ball_rear, 15.), Vec3::new(box_size / 2. -12., 0., box_size / 2. + 17.5)));
     world.push(Translate::new(RotateY::new(box_front, -18.), Vec3::new( box_size / 2. - 147.5, 0., box_size / 2. - 212.5)));
+    world.push(Translate::new(RotateY::new(ball_front, -18.), Vec3::new(box_size / 2. - 147.5, 0., box_size / 2. - 212.5)));
 
     let world_floor = Quad::new(Point3::new(-5000., -20., -1000.), Vec3::new(10000., 0., 0.), Vec3::new(0., 0., 10000.), white.clone());
     world.push(world_floor);
@@ -438,13 +443,13 @@ fn cornell_box_full() {
     let bounded_world = BvhNode::from_objset(world);
 
     let mut camera = Camera::new(
-    1000,
-        16. / 9.,
+        3440,
+        21. / 9.,
         Point3::new(box_size / 2., box_height / 2., -800.),
         //Point3::new(380., 350., -800.),
         Point3::new(box_size / 2., box_height / 2., 0.),
         Vec3::new(0., 1., 0.),
-        1000,
+        50000,
         50,
         56.0,
         0.0,
@@ -454,7 +459,11 @@ fn cornell_box_full() {
         3.,
     );
 
-    camera.render(bounded_world, "output.ppm").unwrap();
+    let start = Instant::now();
+    let rays = camera.render(bounded_world, "output.ppm").unwrap();
+    let duration = start.elapsed();
+    println!("Rendering took: {:?}", duration);
+    println!("Rays/s: {:?}", rays as f64 / duration.as_secs_f64())
 }
 
 fn main() {

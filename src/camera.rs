@@ -103,7 +103,7 @@ impl Camera {
         }
     }
 
-    pub fn render(&mut self, world: BvhNode, file: &str) -> std::io::Result<()> {
+    pub fn render(&mut self, world: BvhNode, file: &str) -> std::io::Result<u64> {
         const NUM_WORKERS: usize = 16;
         let file = File::create(file)?;
         let mut writer = BufWriter::new(file);
@@ -114,7 +114,8 @@ impl Camera {
         writer.write_all(self.frame_height.to_string().as_bytes())?;
         writer.write_all(b"\n255\n")?;
 
-        let bar = ProgressBar::new((self.frame_height * self.frame_width * self.pix_samples) as u64);
+        let total_rays = (self.frame_height * self.frame_width * self.pix_samples) as u64;
+        let bar = ProgressBar::new(total_rays);
 
         let (in_tx, in_rx) = mpsc::channel::<usize>();
         let (out_tx, out_rx) = mpsc::channel::<(usize, Vec<Color>)>();
@@ -176,7 +177,7 @@ impl Camera {
         for worker in workers {
             worker.join().unwrap();
         }
-        Ok(())
+        Ok(total_rays)
     }
 
     /// Process one line of pixels, and return the result
