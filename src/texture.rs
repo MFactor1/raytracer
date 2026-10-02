@@ -83,7 +83,7 @@ impl Image {
 
 impl Texture for Image {
     fn value(&self, u: f32, v: f32, _p: Point3<f32>) -> Color {
-        if self.buf.height() <= 0 { return Color::new(0., 1., 1.) }
+        if self.buf.height() == 0 { return Color::new(0., 1., 1.) }
 
         // Clamp input texture coordiates to [0, 1] x [1, 0]
         let uc = u.clamp(0., 1.);

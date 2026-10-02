@@ -44,6 +44,8 @@ pub struct Camera {
     defocus_disk_v: Vec3<f32>,
     // Scene background color
     background: Color,
+    /// Gamma scalar to use when converting to gamma space
+    gamma: f32,
 }
 
 impl Camera {
@@ -59,6 +61,7 @@ impl Camera {
         defocus_angle: f32,
         focus_dist: f32,
         background: Color,
+        gamma: f32,
     ) -> Self {
         let look_vec = camera_center - look_at;
         let w = look_vec.unit();
@@ -96,6 +99,7 @@ impl Camera {
             defocus_disk_u,
             defocus_disk_v,
             background,
+            gamma,
         }
     }
 
@@ -161,7 +165,7 @@ impl Camera {
 
             while let Some(result) = pending.remove(&next) {
                 for pix in result {
-                    pix.write_color(&mut writer)?;
+                    pix.write_color(&mut writer, self.gamma)?;
                 }
                 next += 1;
             }

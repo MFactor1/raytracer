@@ -3,6 +3,7 @@ pub mod random;
 pub mod metal;
 pub mod dielectric;
 pub mod emmisive;
+pub mod ggx;
 
 use rand::Rng;
 
